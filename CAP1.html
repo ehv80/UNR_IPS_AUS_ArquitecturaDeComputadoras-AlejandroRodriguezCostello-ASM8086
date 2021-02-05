@@ -1,0 +1,98 @@
+<html><head><title>CURSO DE ENSAMBLADOR: LA FAMILIA 80x86</title></head>
+
+<body>
+
+<p align="center">
+<font face="Arial" size="3"><b>CAPÍTULO I: BIENVENIDO A LA FAMILIA (INTEL)</b></font></p>
+	<font face="Arial" size="2">
+	</font><p align="justify"><font face="Arial" size="2">Aunque ahora (¿casi?) todo el mundo gasta Pentium XXL o algo de calibre semejante,
+	en el lanzamiento de cada procesador de esta familia se ha guardado siempre 
+	compatibilidad con los miembros anteriores. Así, es teóricamente posible ejecutar 
+	software de los años 80 en un ordenador actual sin ningún problema (suponiendo que
+	tengamos instalado un sistema operativo que lo apoye).</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Todo el asunto arranca con el 8086, microprocesador de 16 bits que apareció allá por 
+	el año 78; al año siguiente Intel lanzó el 8088, una versión más ecónomica pues contaba
+	con un ancho de bus de datos de 8 bits (lo que le hacía el doble de lento en accesos a memoria de
+	más de 8 bits). Estos micros direccionaban hasta 1Mb de memoria, y en vez de mapear
+	los puertos E/S sobre ella empleaban un direccionamiento específico que abarcaba hasta
+	teóricamente 65536 puertos. Este modo de acceder a los controladores de periféricos
+	se ha mantenido en toda la familia, ya que es un punto de vital importancia en el
+	asunto de la compatibilidad.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">En 1982 se lanzaron los 80186/80188, que en su encapsulado además del procesador
+	propiamente dicho incluían timers, controlador de interrupciones... Incluían algunas
+	instrucciones adicionales para facilitar el trabajo a los compiladores, para acceso
+	a puertos... Hasta donde sé se emplearon como procesadores de E/S en tarjetas de red 
+	y similares, más que en ordenadores.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Ese mismo año aparece en escena el 80286, mucho más complejo que el 8086. Aunque
+	el juego de instrucciones es prácticamente el mismo, se diseñó pensando en la ejecución
+	de sistemas multitarea. Contaba con dos modos de ejecución, el <i>real</i> y el
+	<i>protegido</i>. En el modo real el 286 opera como un 8086; sin embargo en modo
+	protegido cuando un programa intenta acceder a una región de la memoria o ejecutar una
+	determinada instrucción se comprueba antes si tiene ese <i>privilegio</i>. Si no es así
+	se activa un mecanismo de protección que generalmente gestionará el sistema operativo,
+	que es el programa que controla los derechos del resto de programas. Además este modo
+	protegido permitía manejar hasta 16Mb de memoria RAM (por contar con un bus de direcciones
+	de 24 bits), aunque como los registros seguían siendo de 16 bits, no posibilitaba
+	el manejo de bloques de memoria -<i>segmentos</i>- de más de 64kb. En cualquier caso, 
+	más allá del mero aumento de la velocidad de reloj (hasta 10MHz en el 8086, 16, 
+	20 e incluso 25MHz en el 286), o el espacio de memoria direccionable, se produjo una fuerte reducción 
+	del número de ciclos de reloj por instrucción, lo que llevó a un incremento aún mayor del rendimiento.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">En 1985 sale el 80386, lo que vendría a ser un peso pesado comparado a sus antecesores.
+	Prácticamente todos los registros quedaban extendidos a 32 bits, e incluía un mecanismo de
+	gestión de memoria más avanzado que el 286, facilitando el uso de memoria virtual (disco 
+	duro como si fuera ram). Contaba con un bus de direcciones de 32 bits, llegando a 
+	direccionar 4Gb de memoria, y memoria caché. Aparte del modo real incluía un nuevo modo 
+	protegido mejorado. En este modo protegido se permitía la ejecución de programas en un 
+	modo <i>virtual</i> o V86, posibilitando la ejecución de máquinas virtuales 8086; el 
+	sistema puede pasar con cierta facilidad de un modo a otro, permitiendo que funcionen 
+	varios "8086" en una especie de modo "real" al tiempo, cada uno con su memoria, estado... 
+	funcionando completamente ajeno al resto del software. Cuando se ejecuta un programa 
+	de MS-DOS (modo real) bajo Windows (modo protegido) en realidad entra en acción el modo 
+	virtual, ejecutando la aplicación con relativa seguridad aislada del sistema y resto de 
+	aplicaciones (y digo relativa porque he colgado muchas *muchas* veces el windows enredando 
+	con un programilla DOS; los mecanismos de protección del Windows dejan bastante que desear).</font></p>
+<font face="Arial" size="2">	
+	</font><p align="justify"><font face="Arial" size="2">Un 286 en modo protegido no podía volver al modo real salvo con un reset, lo que
+	supuso una seria traba al desarrollo de software que explotase este modo de funcionamiento
+	(no olvidemos que por entonces el estándar de facto en sistemas operativos era MSDOS).
+	Además, seguíamos estando limitados a segmentos de 64k, y con el 386 al caer (siempre
+	que se lanza un procesador nuevo, están los de las siguientes generaciones en diferentes
+	estados de desarrollo) no compensaba el esfuerzo. Debido a la escasa relevancia del
+	modo protegido del 286, nos referiremos genéricamente a modo protegido cuando hablemos
+	de 386+.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Surgieron después el 386SX (un 386 económico, con bus de direcciones de 24 bits y de datos 
+	de 16, lo que permitió una cierta transición 286-386), y varios años después el 386SL, una versión del 386 
+	que aprovechaba las nuevas tecnologías de fabricación de circuitos integrados (lo de siempre; menos consumo,
+	más velocidad, más barato). Éste último se usó sobre todo en equipos portátiles.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">El 486 era básicamente un 386 más rápido, en sus versiones SX (sin coprocesador) y DX
+	(con él). Se hicieron famosas las versiones con multiplicador de reloj del micro, DX2 y
+	DX4.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Y en 1993 llega el primero de los celebérrimos Pentium. Se mejoró, como en cada miembro
+	de la familia, el número de ciclos por instrucción; bus de datos de 64 bits, más caché,
+	más de todo. Luego llegarían los MMX (algunos dicen que MultiMedia eXtensions); un paquete
+	de registros adicionales -bueno, no exactamente- e instrucciones especiales (SIMD, Single 
+	Instruction Multiple Data) para manipular vídeo, audio.. Toda la gama Pentium iría 
+	añadiendo sus cosillas (AMD por su parte haría lo propio en los suyos), pero sin cambios 
+	fundamentales en la arquitectura (al menos, en lo que a la visión del programador se
+	refiere). </font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Aunque desde el 8086 la cosa se ha complicado mucho, se podría decir que el 
+	microprocesador que supuso el cambio más importante en esta familia fue el 386. En algunos contextos
+	se habla de esta familia de microprocesadores como IA32 (Intel Architecture 32 bits) o i386, abarcando desde
+	el 386 en adelante (cualquier micro compatible, Intel o no), pues básicamente funcionan todos ellos igual. 
+	El 8086 será el punto de partida de estas lecciones, ya que todos estos procesadores, cuando arrancan, se
+	comportan como un 8086. Será el sistema operativo el que prepare el equipo para entrar en modo protegido
+	y acceder así a todos los recursos, mecanismos de protección, etc, abandonando ya la compatibilidad con los
+	procesadores anteriores al 386.</font></p>
+
+<font face="Arial" size="2">	</font><p align="right"><font face="Arial" size="2"><a href="http://www.rinconsolidario.org/eps/asm8086/asm.html">Regresar al índice</a></font></p><p align="justify">
+<font face="Arial" size="2">	</font>
+
+</p></body></html>

@@ -1,0 +1,97 @@
+<html><head><title>CURSO DE ENSAMBLADOR: MODELO DE MEMORIA EN MODO REAL</title></head>
+
+<body>
+
+<p align="center">
+<font face="Arial" size="3"><b>CAPÍTULO XIII: EL MODELO DE MEMORIA EN MODO REAL</b><br>
+Brevísimas anotaciones sobre un sistema obsoleto.</font></p>
+
+	<font face="Arial" size="2">
+
+	</font><p align="justify"><font face="Arial" size="2">Como bien dice el título, este sistema está obsoleto. Bueno, en parte. Si alguien
+	se digna en leer este capítulo, al final del todo verá porqué lo digo. Es cierto
+	sin embargo que lo incluyo fundamentalmente por culturilla, porque yo he usado MSDOS 
+	una buena temporada (pegándome con la configuración de inicio para rascar esos kbytes 
+	de memoria convencional extra para conseguir ejecutar un juego), y porque ayuda a 
+	entender ciertas situaciones de los equipos actuales que no encajan en nuestra
+	concepción de memoria "plana". Lo que aquí se describa será cierto para cualquier
+	ordenador sin importar la cantidad de memoria instalada; el que me refiera al MSDOS
+	sólo condiciona el cómo era gestionada esa memoria. Veamos ya cómo está distribuida la 
+	memoria en un 80x86.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Los primeros 640kb de memoria RAM comprenden la <b>memoria convencional</b>. 
+	Esta región es donde se colocaba buena parte del MSDOS y sistemas hermanos del modo real,
+	y donde se colocan normalmente las rutinas de inicio de los sistemas protegidos.</font></p>
+<font face="Arial" size="2">	
+	</font><p align="justify"><font face="Arial" size="2">Se llama <b>memoria superior</b> a los 384kb de memoria direccionable que quedan
+	por encima de la convencional (640+384=1024k=1Mb). Sobre ella se mapea la memoria de
+	vídeo, la memoria expandida y la BIOS.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Dentro de la memoria superior las posiciones 0A0000h-0BFFFFh se reservan 
+	para la memoria de vídeo. Ahí mapea la tarjeta gráfica su memoria; escribiendo en esas 
+	direcciones se escribe realmente sobre la tarjeta de vídeo. El significado del contenido 
+	de esta zona depende del modo gráfico en el que estemos (resolución y profundidad de 
+	color), así como de la tarjeta. Ésta lo que hace es recorrer continuamente su memoria y 
+	proporcionar una salida analógica tras DAC's con las componentes de color junto con unas 
+	señales de sincronismo. Con el acceso a los puertos es posible elegir qué parte de la 
+	memoria se mapea en la RAM, pues las tarjetas pronto empezaron a contar con más de 64kb 
+	de memoria. Se dice entonces que la memoria está <i>paginada</i>, siendo ese segmento 
+	su <i>marco de página</i>; estas operaciones eran habituales en las SVGA.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">A partir de 0C0000h se encuentra parte de la ROM (de algunas tarjetas de 
+	la placa y demás aparejos) y los residentes que el 
+	MSDOS ubicaba en el arranque para liberar memoria convencional. Las posiciones 0D0000h-0EFFFFh
+	de memoria superior podían ser ocupados también por la BIOS o más residentes; sin
+	embargo eran importantes porque se mapeaba en un segmento (generalmente 0D000h) 
+	la <b>memoria expandida</b>. En 0F0000h se coloca la ROM BIOS (el SETUP, por ejemplo)</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Aquí uno solía decir; vale, pero yo tengo instalada más memoria. ¿Qué pasa con ella?
+	Toda la memoria por encima del mega direccionable (directamente, se entiende) se llama
+	<b>memoria extendida</b>. Los primeros 64k eran accesibles sin demasiado problema 
+	habilitando una línea adicional del bus, pues como se comentó al calcular la dirección 
+	a partir del segmento y el offset podía suceder que tuviéramos bit de carry. Aprovechando 
+	esta característica se accedía a la <b>memoria alta</b>, que aparece en los 286 y 
+	posteriores. Mediante funciones especiales era posible copiar bloques de memoria extendida 
+	sobre la memoria convencional, y viceversa (recordemos que la limitación del modo real
+	en cuando a direccionamiento es que no podemos apuntar a posiciones de memoria por
+	encima del primer mega). De esta manera se accedía a los datos 
+	más rápidamente que cargándolos desde el disco; nacieron con ello los discos virtuales o
+	cachés de disco (la idea opuesta a la memoria virtual) para determinadas aplicaciones.
+	El estándar que surgió de todo esto fueron las <i>especificaciones XMS</i>, que además
+	hacían más rápidas las operaciones de memoria en los 386+ (haciendo uso del ancho de 
+	32 bits).</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Ya en los tiempos el XT la gente había empezado a darle al tarro para manejar 
+	más memoria. La idea era paginar la memoria RAM (como la tarjeta de vídeo) usando un segmento 
+	como marco de página, que se dividió en 4 bloques de 16 kb. Se incluyó memoria RAM con
+	circuitería especial y mediante accesos E/S se elegía qué página se colocaba sobre
+	esa "ventana". Para facilitar la gestión de esta memoria se desarrolló la especificación
+	LIM-EMS (Lotus-Intel-Microsoft Expanded Memory System), un driver que se cargaba en el
+	inicio y accesible a través de la interrupción 67h, haciendo que el programador se
+	pudiera olvidar del control directo de la tarjeta de memoria.</font></p>
+<font face="Arial" size="2">	
+	</font><p align="justify"><font face="Arial" size="2">Los 386+ podían "convertir" memoria extendida en expandida a través de un gestor
+	de memoria como el EMM386 (incluído con el MSDOS) o QEMM386. En el arranque el sistema
+	entraba en modo protegido para tener completo control de la memoria y a continuación	
+	entraba en modo virtual, emulando en entorno DOS la memoria expandida. Así seguía siendo
+	compatible con todo lo anterior (un casposillo 8086 con esteroides) pero pudiendo manejar
+	la memoria extra como si fuera expandida.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">En el <i>Universo Digital</i> de la sección de enlaces se explica el 
+	manejo tanto de la memoria extendida como de la expandida, por si alguno se aburre. No es
+	que sea de gran utilidad, pero bueno, si alguien está pensando en hacer un emulador o
+	algo por el estilo, ya sabe..</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Esta distribución de la memoria tiene gran interés para el programador a 
+	bajo nivel, incluso en modo protegido. Aunque en este modo la memoria se direcciona con total
+	libertad (por lo menos para el sistema operativo), y su gestión es completamente ajena
+	al usuario, hay que saber que ese mapa de memoria <i>está ahí</i> realmente; hay 
+	zonas con ROM mapeada que no se deben tocar, la tarjeta de vídeo sigue en un determinado 
+	rango de direcciones, etc. Desde ese punto de vista el espacio de memoria no es algo 
+	conexo; un 286 que tuviera un megabyte de memoria, disponía de 640kb de memoria convencional
+	<i>y 384kb de memoria extendida</i> (fuera del primer megabyte direccionable!) por este 
+	mismo motivo.</font></p>
+
+<font face="Arial" size="2">	</font><p align="right"><font face="Arial" size="2"><a href="#INICIO">Regresar al índice</a></font></p><p align="justify">
+
+</p></body></html>

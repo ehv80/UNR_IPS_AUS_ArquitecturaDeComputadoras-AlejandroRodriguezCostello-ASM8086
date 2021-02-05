@@ -1,0 +1,250 @@
+<html><head><title>CURSO DE ENSAMBLADOR: INSTRUCCIONES MMX</title></head>
+
+<body>
+
+<p align="center">
+<font face="Arial" size="3"><b>CAPÍTULO VIII: MI ORDENADOR TIENE MMX. Y QUÉ.</b></font></p>
+
+	<font face="Arial" size="2">
+	</font><p align="justify"><font face="Arial" size="2">Todos los Pentium MMX y posteriores procesadores Intel, así como prácticamente todos los 
+	AMD desde su fecha cuentan con un juego de instrucciones con este nombre. Estas instrucciones 
+	trabajan con la filosofía SIMD (que como ya dijimos viene a ser aplicar la misma operación a 
+	varios datos), que suele ser de aplicación en imágenes, vídeo y cosas así. Para hacer uso de 
+	lo aprendido en este capítulo hará falta un ensamblador mínimamente actualizado (cosa no
+	demasiado problemática si venimos dándole al NASM), y aunque es un 
+	tema de aplicación bastante específica, no es algo que se les de muy bien a los 
+	compiladores: muchos no lo usan, y otros no lo usan demasiado bien.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Este tipo de micros (Pentiums MMX y posteriores) cuentan con 8 registros MMX de 64 
+	bits, que en realidad son un <i>alias</i> (bueno, esto pronto dejó de ser así, pero
+	en principio es cierto) de los registros de la FPU. Quiere decir esto que cuando escribo 
+	un dato en un registro MMX en realidad lo estoy haciendo sobre un registro del 
+	coprocesador. Más exactamente, sobre la mantisa de un registro del coprocesador. Esto 
+	requiere que cada vez que se alternen operaciones de coma flotante con MMX, como cuando 
+	se cambia de <i>contexto</i> en un entorno multitarea, se salve el estado de los registros 
+	de un tipo y se restaure del otro. Por tanto, aunque es posible emplear instrucciones MMX 
+	y de la FPU en un mismo código, es poco recomendable en tanto que cambiar constantemente 
+	de unas a otras dará un programa muy ineficiente. Intel recomienda en estos casos algo
+	que es tan de sentido común como efectuar la ejecución de estas instrucciones de manera 
+	separada en ciclos, subrutinas, etc.. vaciando completamente los registros de un tipo u 
+	otro en cada cambio (y no dejar por ejemplo un real en la pila de la FPU antes de entrar 
+	en una función MMX para luego esperar que ese número siga ahí). Si alternamos código FP 
+	(floating point, para abreviar) con MMX, al acabar la parte FP se habrá vaciado 
+	completamente la pila (con FFREE, mismamente), se ejecutará el código MMX y se terminará 
+	con la instrucción <b>EMMS</b> (dejándolo libre de nuevo para instrucciones FP) y así 
+	sucesivamente.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Los registros MMX se nombran por las posiciones reales que ocupan (MM0,MM1...MM7), y no 
+	por la posición respecto de un puntero de pila como en la FPU. A estos ocho registros puede 
+	accederse con los modos de direccionamiento habituales, con lo que a ese respecto no 
+	tendremos que aprender nada nuevo.</font></p>
+
+<p align="justify"><font face="Arial" size="2"><b>TIPOS DE DATOS</b></font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Los registros son de 64 bits, que pueden distribuirse de distinta manera para
+	representar la información. Tenemos por tanto paquetes de bytes (8 bytes por registro), 
+	palabras (4 <i>words</i>), palabras dobles (2 <i>dwords</i>) o cuádruples (todo el 
+	registro para un único dato de 64 bits, una <i>qword</i>)</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">¿Dónde está la gracia del asunto? Pues en que ahora podemos, por ejemplo, sumar 8
+	bytes con signo con otros 8 bytes con signo si están debidamente empaquetados en dos
+	registros, ya que el micro efectuará la suma de cada byte de un registro con el byte
+	correspondiente del otro, todo ello en paralelo. Esto se aplica para operaciones
+	aritméticas y lógicas. Por ejemplo, si tenemos 2 registros MMX con datos de tipo byte
+	sin signo "FF 18 AB C1 01 14 00 F0" y "81 9F 03 01 A1 BB 12 11" y los sumamos con
+	PADDB obtendremos como resultado la suma de cada byte individual con cada byte:
+	"80 B7 AE C2 A2 CF 12 01"</font></p>
+
+<p align="justify"><font face="Arial" size="2"><b>SATURACIÓN Y RECICLADO</b>. Traducciones raras para conceptos simples.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Intel distingue dos modos de operación aritmética: <i>saturating arithmetic</i> y <i>
+	wraparound</i>. Normalmente cuando se efectúa una suma, si el resultado excede el
+	rango de representación aparece un bit de carry que va a algún sitio, o se pierde, 
+	y tenemos como resultado la parte baja del resultado "bueno". Esto es lo que se 
+	llama <i>wraparound</i>. Por el contrario, se realizan operaciones que <i>saturan</i> 
+	cuando un número que se sale del rango válido por arriba por abajo es limitado (como la 
+	palabra misma sugiere) al máximo o mínimo representable. Por ejemplo, para números sin 
+	signo, F0h + 10h no será 00h (y me llevo una), sino FFh. Dependiendo de si son números 
+	con o sin signo los rangos serán diferentes, claro. Si tenemos una señal de audio 
+	muestreada con 16 bits (enteros con signo) y por lo que sea la amplitud ha de 
+	incrementarse, si la señal valiese ya 7FFFh en una determinada muestra, el overflow 
+	nos la destrozaría pues invertiría ahí la señal (8000h = -32768d). Y lo mismo sucede 
+	con el color (si FFh es el máximo de intensidad posible de un color y 00h el mínimo, 
+	oscurecer un poco más una imagen a todos los pixels por igual convertiría el negro, 
+	00h, en blanco puro, FFh). En situaciones de este tipo las operaciones ordinarias son 
+	muy engorrosas pues exigen numerosas comprobaciones, cuando el concepto de operaciones 
+	con saturación nos resuelve inmediatamente la papeleta.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Si te cuento todo este rollo es porque, efectivamente, hay instrucciones MMX con ambos 
+	modos de operación.</font></p>
+
+<p align="justify"><font face="Arial" size="2"><b>JUEGO DE INTRUCCIONES MMX</b></font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Todas las instrucciones MMX (excepto EMMS) tienen dos operandos, destino y origen, 
+	y como siempre en ese mismo orden. El operando origen podrá ser memoria o un registro 
+	MMX, mientras que el destino siempre será un registro MMX (excepto en las operaciones de movimiento,
+	claro, porque si no, apañados íbamos). Bueno, que empiece la fiesta.</font></p>
+
+<p align="justify"><font face="Arial" size="2">- <i><u>INSTRUCCIONES DE MOVIMIENTO DE DATOS</u></i></font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"></p><li><font face="Arial" size="2"><b>MOVD</b> (MOVe Dword)<br>
+	Copia una palabra doble (32 bits) de origen en destino. Cualquiera de los
+	operandos puede ser un registro MMX, memoria, o incluso un registro de propósito general
+	de 32 bits. Sin embargo no es válido mover entre registros MMX, entre posiciones de 
+	memoria, ni entre registros de propósito general. Si el destino es un registro MMX
+	el dato se copia a la parte baja y se extiende con ceros. Si el origen es un registro
+	MMX se copia es la parte baja de dicho registro sobre el destino.</font></li><p></p>
+
+<font face="Arial" size="2">	</font><p align="justify"></p><li><font face="Arial" size="2"><b>MOVQ</b> (MOVe Qword)<br>
+	Copia una palabra cuádruple (64 bits) de origen en destino. Cualquier
+	operando puede ser memoria o un registro MMX, o incluso ambos MMX. No se admiten los
+	dos operandos en memoria.</font></li><p></p>
+<font face="Arial" size="2">	<br>
+	</font><p align="justify"><font face="Arial" size="2">A partir de ahora, y salvo que se diga lo contrario, todas las instrucciones
+	admiten como operandos origen registros MMX o memoria, y como destino obligatoriamente
+	un registro MMX.</font></p>
+
+<p align="justify"><font face="Arial" size="2">- <i><u>INSTRUCCIONES ARITMÉTICAS</u></i></font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"></p><li><font face="Arial" size="2"><b>PADDB, PADDW, PADDD</b> (Packed ADD Byte/Word/Dword)<br>
+	Suman los paquetes con signo (bytes, words, o dwords) de destino y origen, almacenando
+	el resultado en destino. Si el resultado de un paquete queda fuera del rango
+	se trunca a la parte más baja (es decir, se ignoran los bits de carry de cada suma
+	individual)</font></li><p></p>
+
+<font face="Arial" size="2">	</font><p align="justify"></p><li><font face="Arial" size="2"><b>PADDSB, PADDSW</b> (Packed ADD with Saturation Byte/Word)<br>
+	Suman los paquetes con signo (bytes o words) de origen y destino, almacenando el 
+	resultado en destino. Si el resultado de un paquete queda fuera del rango 
+	de representación, se limita al máximo o mínimo según corresponda: aplica 
+	<i>saturación</i></font></li><p></p>
+
+<font face="Arial" size="2">	</font><p align="justify"></p><li><font face="Arial" size="2"><b>PADDUSB, PADDUSW</b> (Packed ADD Unsigned with Saturation Byte/Word)<br>
+	Suma los paquetes sin signo de origen y destino, almacenando el resultado en destino.
+	Aplica <i>saturación</i>.</font><p></p>
+
+<font face="Arial" size="2">	</font><p align="justify"></p></li><li><font face="Arial" size="2"><b>PSUBB, PSUBW, PSUBD</b> (Packed SUBstract Byte/Word/Dword)<br>
+	Resta a los paquetes de destino (bytes, words o dwords) los de origen.</font><p></p>
+
+<font face="Arial" size="2">	</font><p align="justify"></p></li><li><font face="Arial" size="2"><b>PSUBSB, PSUBSW</b> (Packed SUBstract with Saturation Byte/Word)<br>
+	Resta a los paquets de destino con signo (bytes o words) los de origen. Aplica
+	<i>saturación</i>.</font></li><p></p>
+
+<font face="Arial" size="2">	</font><p align="justify"></p><li><font face="Arial" size="2"><b>PSUBUSB, PSUBUSW</b> (Packed SUBstract Unsigned with Saturation Byte/Word)<br>
+	Resta a los paquets de destino con signo (bytes o words) los de origen. Aplica
+	<i>saturación</i>.</font></li><p></p>
+
+<font face="Arial" size="2">	</font><p align="justify"></p><li><font face="Arial" size="2"><b>PMULHW, PMULLW</b> (Packed MULtiply High/Low Word)<br>
+	Multiplica las cuatro palabras del operando origen con las cuatro del operando destino,
+	resultando en cuatro <i>dwords</i>. La parte alta o baja respectivamente de cada dword 
+	es almacenada en los paquetes correspondientes del destino. Las operaciones se realizan
+	sobre números con signo.</font></li><p></p>
+
+<font face="Arial" size="2">	</font><p align="justify"></p><li><font face="Arial" size="2"><b>PMADDWD</b> (Packed Multiply and ADD)<br>
+	Multiplica las cuatro palabras del operando origen con las cuatro del operando destino,
+	resultando en cuatro <i>dwords</i>. Las dos dwords superiores son sumadas entre sí
+	y almacenadas en la parte alta del destino. Lo mismo con las dwords inferiores en la
+	parte inferior del destino.</font></li><p></p>
+<font face="Arial" size="2">	
+</font><p align="justify"><font face="Arial" size="2">- <i><u>INSTRUCCIONES DE COMPARACIÓN</u></i></font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"></p><li><font face="Arial" size="2"><b>PCMPEQB, PCMPEQW, PCMPEQD</b> (Packed CoMPare for EQual Byte/Word/Dword)<br>
+	<b>PCMPGTB, PCMPGTW, PCMPGTD</b> (Packed CoMPare for Greater Than Byte/Word/Dword)<br>
+	Realiza la comparación de igualdad o de "mayor que" entre las palabras de origen y de
+	destino, almacenando en destino el resultado de dicha comparación (verdadero todo a 1,
+	falso todo a 0).</font></li><p></p>
+
+<p align="justify"><font face="Arial" size="2">- <i><u>INSTRUCCIONES LÓGICAS</u></i></font></p>
+<font face="Arial" size="2">	</font><p align="justify"></p><li><font face="Arial" size="2"><b>PAND, PANDN, POR, PXOR</b> (Packed AND/AND Not/OR/XOR)<br>
+	Realizan las operaciones lógicas correspondientes bit a bit entre operando y destino,
+	almacenando el resultado en destino. PANDN realiza la operación NOT sobre los bits
+	de destino, y a continuación efectúa AND entre operando y destino, almacenando el
+	resultado en destino. PANDN de un registro consigo mismo equivale a NOT, pues A AND A
+	 = A.</font></li><p></p>
+
+<p align="justify"><font face="Arial" size="2">- <i><u>INSTRUCCIONES DE DESPLAZAMIENTO</u></i></font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"></p><li><font face="Arial" size="2"><b>PSLLW,PSLLD</b> (Packed Shift Left Logical Word/Dword)<br>
+	<b>PSRLW,PSRLD</b> (Packed Shift Right Logical Word/Dword)<br>
+	Efectuan desplazamientos lógicos hacia la izquierda o derecha (Left/Right) sobre las
+	palabras o palabras dobles empaquetadas (Word/Dword); desplazan los bits y rellenan
+	con ceros.</font></li><p></p>
+
+<font face="Arial" size="2">	</font><p align="justify"></p><li><font face="Arial" size="2"><b>PSRAW,PSRAD</b> (Packed Shift Right Arithmetic Word/Dword)<br>
+	Efectuan desplazamientos aritméticos hacia la derecha sobre las palabras o palabras 
+	dobles empaquetadas (Word/Dword); equivalen a dividir entre 2 números con signo,
+	pues en el desplazamiento rellenan con el bit más significativo.</font></li><p></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2"><b>EMMS</b> (Empty MMX State) restaura el estado de los registros para que puedan ser 
+	usados por la FPU, pues cada vez que se ejecuta una instrucción MMX se marcan todos los
+	registros como con un resultado numérico válido, cuando para su uso por la FPU han de
+	ser marcados como vacíos (que es exactamente lo que hace FFREE)</font></p>
+
+<p align="justify"><font face="Arial" size="2"><b>APLICACIONES</b></font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">¿Realmente son tan útiles estas instrucciones? Pues sí. Aparte de la aplicación
+	obvia de mover datos en memoria en tochos de 64 bits (cosa no demasiado recomendable
+	mediante instrucciones de la FPU, pues pierde tiempo haciendo conversiones), como
+	ya se dijo, en tratamiento de imágenes tenemos que manipular regiones de memoria 
+	bastante generosas, a menudo con operaciones repetitivas. Como es probable que al que
+	no haya hecho nada parecido en su vida no se le ocurra ninguna aplicación, vamos con
+	un ejemplillo con dibujos y todo.</font></p>
+
+<font face="Arial" size="2">	<left><img src="CAP8_files/indy2.jpg" width="80%"></left><right><img src="CAP8_files/indy.jpg" width="7%"></right>
+
+	</font><p align="justify"><font face="Arial" size="2">He aquí dos imágenes de un juego que hipotéticamente estamos programando. La de
+	la izquierda corresponde a un decorado estilo años 30, en blanco y negro y todo, y
+	la de la derecha a nuestro protagonista (que a más de un amante de las aventuras gráficas
+	le resultará sobradamente conocido). Las imágenes son almacenadas en 256 tonos de gris, o 
+	sea, un byte por pixel; cada imagen es una matriz de enteros, cada byte indicando el
+	brillo (255 blanco puro, 0 negro puro). Nuestra idea es que el personaje se mueva por 
+	la pantalla, alternando imágenes en sucesión sobre el decorado. Así pues el primer 
+	objetivo es colocar UNA imagen del personaje sobre el fondo.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Fácil, cogemos la imagen del personaje y la pegamos sobre.. Ummm. Es posible que
+	el fondo negro sea un problema. Bueno, entonces miramos byte a byte; si es negro (0)
+	dejamos el fondo como está, y si no lo es sobreescrimos el fondo con el byte
+	correspondiente de nuestro personaje. Podemos asignar entonces al 0 el color 
+	"transparente", y distribuir nuestra paleta de grises del 1 al 255 (pues los ojos son 
+	negros, y habría que asignarles un color distinto de 0).</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2"> No es una mala opción, pero al menos hay otra que es crear lo que se conoce como
+	una máscara. Con cada imagen del personaje almacenamos otra de "negativo", que contiene 
+	FFh donde NO hay pixels del personaje, y 00h donde sea así. Si llamamos a F el fondo, 
+	P el personaje y M la máscara, tenemos que F_nuevo = [F AND M] + [P AND NOT(M)] 
+	(asumiendo por supuesto que asignamos los elementos correctos de cada matriz). Las 
+	operaciones lógicas las podremos hacer a toda leche cogiendo los bytes de 8 en 8 con 
+	nuestras instrucciones MMX. Puede parecer un poco retorcido en comparación, pero ya 
+	veremos que tiene sus ventajas. </font></p>
+
+<font face="Arial" size="2">	</font><center><font face="Arial" size="2"><img src="CAP8_files/indy_neg.jpg" width="7%"></font></center>
+<font face="Arial" size="2">	</font><center><font face="Arial" size="2">Máscara del personaje</font></center>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Seguimos con el ejemplo. Supongamos ahora que tenemos almacenados los "fotogramas" 
+	del movimiento de nuestro intrépido protagonista, pero que al emplearlos en un entorno 
+	como el anterior (de noche) vemos que queda demasiado claro: no "pega" la luminosidad 
+	que tiene esa imagen con la del fondo. Y más aún, queremos que según nos movamos por la 
+	pantalla a puntos más claros (bajo una farola) el personaje se ilumine un poco, y se 
+	oscurezca al meterse en zonas sin iluminación. Aquí entra en acción la suma con 
+	saturación.	Cogemos la imagen del personaje, y sumamos o restamos un valor dado (en 
+	función de la luminosidad) a los atributos de color de la matriz. Supongamos que un punto
+	es blanco (FFh) y por efecto del "aclarado" le sumamos 1 más. Gracias a la
+	suma con saturación permanecería FF, pudiendo operar indistintamente con todos
+	los elementos de la matriz. Ahora nos interesa el asunto de la máscara, pues
+	el 00h sería el tope inferior de "oscuridad". Cambiando un simple parámetro podríamos
+	generar con suma facilidad, y en tiempo de ejecución, degradados comos los siguientes:</font></p>
+
+<font face="Arial" size="2">	</font><center>
+<font face="Arial" size="2">	<img src="CAP8_files/indy.jpg" width="7%">
+	<img src="CAP8_files/indi_pal2.jpg" width="7%">
+	<img src="CAP8_files/indi_pal3.jpg" width="7%">
+	<img src="CAP8_files/indi_pal4.jpg" width="7%">
+	</font></center>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Si imaginamos ahora lo que tendríamos que hacer para realizar todas esas sumas, 
+	comprobaciones, operaciones lógicas prácticamente byte a byte mediante instrucciones 
+	convencionales, es obvio que el factor de ganancia es incluso mayor que ocho. 
+	¿Convencido?</font></p>
+<font face="Arial" size="2">	
+	</font><p align="right"><font face="Arial" size="2"><a href="http://www.rinconsolidario.org/eps/asm8086/asm.html">Regresar al índice</a></font></p><p align="justify">
+
+</p></body></html>

@@ -1,0 +1,801 @@
+<html><head><title>CURSO DE ENSAMBLADOR: JUEGO DE INSTRUCCIONES DEL 8086</title></head>
+
+<body>
+
+<p align="center">
+<font face="Arial" size="3"><b>CAPÍTULO VI: JUEGO DE INSTRUCCIONES DEL 8086</b><br>
+¡Mamá, ya sé sumar!
+</font></p>
+
+	<font face="Arial" size="2">
+
+	</font><p align="justify"><font face="Arial" size="2">A continuación voy a describir brevemente todas las instrucciones que 
+	admite un 8086; entre paréntesis señalaré, si toca, los flags que altera cada una. Recordemos 
+	que el registro de flags contiene alguos indicadores que se ponen a "0" o a "1" según el
+	resultado de la última operación realizada (se obtiene un número negativo, ha habido carry, 
+	overflow..) Con las instrucciones se mostrará qué flags
+	son modificados por este motivo, pero no se garantiza que el resto de flags "informativos"
+	no se verán alterados por la ejecución de la instrucción (o sea, el valor de ciertos
+	flags puede quedar indeterminado tras la operación). Para detalles escabrosos sobre el 
+	funcionamiento de ciertas instrucciones, es mejor consultar una tabla de referencia en
+	condiciones, como las que tiene Intel por ahí en pdf en su página web, o la que viene con 
+	el manual de NASM.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Aunque el título dice "del 8086", entremezclo algunas peculiaridades de
+	los procesadores superiores; en la mayoría de los casos quedará claro si sirven o no
+	en un 8086 (si usan EAX, por ejemplo, es evidente que no). Una diferencia fundamental 
+	del 8086 con sus descendientes es que algunas de estas mismas instrucciones
+	pueden recibir, además de los operandos habituales, otros adicionales propios de los nuevos
+	procesadores. Me explico. Uno en un 386 puede hacer <i>ADD AX,BX</i> (AX=AX+BX) como un
+	8086 cualquiera, pero además, por contar con registros de 32 bits, podrá hacer
+	cosas del estilo <i>ADD EAX,EBX</i>. En ambos casos se tratará de la misma instrucción 
+	(ADD, sumar), sólo que si el procesador cuenta con más registros, o registros extendidos,
+	o simplemente capacidad de admitir nuevos operandos, podremos usarlos. Para esta instrucción en
+	particular la sintaxis se describirá como <i>ADD destino, origen</i>, pero por <i>destino</i> y 
+	<i>origen</i> no será necesariamente válido cualquier modo de direccionamiento.. Dependerá
+	de la instrucción, y en cierta medida del procesador que se use. En la mayoría 
+	de los casos imperarán las reglas generales "no es válido operar de memoria a memoria" y "no es válido 
+	operar con registros de segmento". Hay además una cierta lógica en estas restricciones 
+	(el operando destino generalmente es un registro de propósito general), e instrucciones similares 
+	entre sí aceptarán casi con toda seguridad los mismos operandos. Se harán algunas observaciones sobre los
+	operandos válidos para cada instrucción, pero de nuevo para cualquier duda lo mejor será echar
+	mano de una tabla "oficial" (que es lo que hacemos todos, no te creas que alguien se lo aprende de memoria).</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Los procesadores posteriores al 8086 incluyen no sólo mejoras en las instrucciones,
+	sino instrucciones adicionales. De éstas sólo se indicarán, un tanto desperdigadas por ahí, las que puedan 
+	ser utilidad. Las demás no digo que sean inútiles, sino que en la mayoría de los casos no nos estarán permitidas. Hay 
+	un conjunto de instrucciones exclusivas del modo protegido que sólo podrán ser usadas por el
+	sistema operativo, y se dice que son <i>instrucciones privilegiadas</i>; un programa de
+	usuario que intente ejecutar una operación de este tipo será detenido, generalmente con un 
+	mensaje que indique un error de protección general. Casi todas las instrucciones privilegiadas
+	corresponden a operaciones que pueden afectar al funcionamiento del resto de procesos
+	del sistema (en modo protegido, por lo general, tendremos varios programas funcionando
+	al tiempo, aunque en un momento dado el usuario intente cargar "el suyo"). Un ejemplo es
+	<i>INVD</i>, que invalida la información de la memoria cache interna. Si no fuera ésta una
+	instrucción privilegiada, cualquiera podría, en cualquier momento, desbaratar la cache con
+	un programa malintencionado (recordemos que puede suceder que haya varios usuarios trabajando
+	al tiempo en un cierto ordenador). Las instrucciones IN/OUT son usadas ya por el 8086 (de hecho
+	son fundamentales), pero no se incluyen en este capítulo porque sin ser propias del modo protegido,
+	cuando el micro funciona en este modo,se consideran instrucciones privilegiadas. A ellas me referiré
+	en otro capítulo.	Finalmente, los conjuntos especiales de instrucciones (coprocesador matemático,
+	MMX, SSE..) se comentarán en capítulos aparte.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">La discusión más delicada tiene lugar cuando diferenciamos un procesador 
+	funcionando "en 16 bits" (modo real, que se comporta como un 8086 aunque no lo sea), y
+	"en 32 bits" (modo protegido, cualquier 386+ en Linux, Windows, etc), porque a menudo crea
+	confusión. Cuando estamos ejecutando un programa para MSDOS (aunque sea desde Windows, ya que estará 
+	<i>emulando</i> un entorno de MSDOS), nuestro procesador dispondrá de, tal vez, más registros, 
+	pero como ya hemos visto seguirá obteniendo las direcciones como segmento*16+offset (aunque 
+	pueda realizar operaciones con los registros extra, o incluso direccionar la memoria con ellos
+	en esta circunstancia). Existen instrucciones que ya no según el procesador sino según <i>el modo de 
+	funcionamiento</i> se comportan de un modo u otro; ése es el caso de <i>LOOP</i>, que en modo real
+	altera CX y en modo protegido ECX (normalmente prefiero decir "32 bits" a "modo protegido", porque existen
+	condiciones excepcionales bajo las cuales se puede ejecutar código de 16 bits en modo protegido; no 
+	entraré de momento en esta discusión). En modo 32 bits, además, los offsets son de este tamaño,
+	lo que significa que los punteros de pila, instrucción, etc, serán de tipo dword. Importantísimo
+	tenerlo presente al pasar argumentos a subrutinas a través de la pila (daré mucho la brasa con
+	esto a lo largo del tutorial).</font></p>
+
+<p><font face="Arial" size="2"><i>- <u>INSTRUCCIONES DE MOVIMIENTO DE DATOS</u></i></font></p>
+
+<font face="Arial" size="2">	<li><b>MOV</b> <i>destino</i>, <i>origen</i> (MOVe, mover)</li>
+	</font><p align="justify"><font face="Arial" size="2">Bueno, qué voy a contar de ésta que no haya dicho ya.. Vale, sí, un pequeño 
+	detalle. Cuando se carga SS con MOV, el micro inhibe las interrupciones hasta 
+	después de ejecutar la siguiente instrucción. Aún no he dicho lo que son las interrupciones
+	ni qué tiene de especial la pila así que tardaremos en comprobar qué puede tener de útil
+	este detalle, y la verdad es que normalmente nos dará lo mismo, pero bueno, por si las moscas.</font></p>
+
+<font face="Arial" size="2">	<li><b>XCHG</b> <i>destino</i>, <i>origen</i> (eXCHanGe, intercambiar)<p></p>
+	<p align="justify">Intercambia destino con origen; no se puede usar con registros de segmento. 
+	Esta instrucción encuentra su utilidad en aquellas instrucciones que tienen asociados registros 
+	específicos.</p>
+
+<p>- <u><i>OPERACIONES ARITMETICAS</i></u></p><p>
+
+	</p></li><li><b>ADD</b> <i>destino</i>, <i>origen</i> (ADDition, sumar) {O,S,Z,A,P,C}</li>
+	</font><p align="justify"><font face="Arial" size="2">Suma origen y destino, guardando el resultado en destino. Si al sumar
+	los dos últimos bits "me llevo una" el bit de carry se pone a 1 (y si no, a 0).</font></p>
+<font face="Arial" size="2">	<li><b>ADC</b> <i>destino</i>,<i>origen</i> (ADdition with Carry, sumar con acarreo) {O,S,Z,A,P,C}</li>
+	</font><p align="justify"><font face="Arial" size="2">Suma origen, destino y el bit de carry, guardando el resultado en destino. Sirve 
+	entre otras cosas para sumar números de más de 16 bits arrastrando el bit de carry
+	de una suma a otra. Si quisiéramos sumar dos números enteros de 64 bits almacenados en EAX-EBX
+	y ECX-EDX, podríamos sumarlos con <i>ADD EBX,EDX</i> primero y <i>ADC EAX,ECX</i> después
+	(para sumar las partes altas de 32 bits con "la que nos llevábamos" de las partes bajas).
+	Sumar con ADC puede generar a su vez carry, con lo que teóricamente podríamos sumar números
+	enteros de cualquier tamaño, propagando el carry de una suma a otra.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Podemos poner a 1 el flag de carry directamente mediante <b>STC</b> (SeT Carry) 
+	o a 0 mediante <b>CLC</b> (CLear Carry), ambas instrucciones sin argumentos.</font></p>
+
+<font face="Arial" size="2">	<li><b>INC</b> <i>destino</i> (INCrement, incrementar) {O,S,Z,A,P}</li>
+	</font><p align="justify"><font face="Arial" size="2">Incrementa el operando destino en 1. Puede ser un operando de tamaño
+	"byte" o superior, tanto un registro como una posición de memoria; en este último caso hay que 
+	especificar tamaño con WORD, DWORD etc, tal y como explicamos en el capítulo III con los modos 
+	de direccionamiento. Esta instrucción no modifica el bit de carry; si quieres detectar cuándo 
+	"te pasas" al incrementar un contador, usa el flag "Zero" o el de signo.</font></p>
+
+<font face="Arial" size="2">	<li><b>SUB</b> <i>destino</i>, <i>origen</i> (SUBstract, resta) {O,S,Z,A,P,C}</li>
+	</font><p align="justify"><font face="Arial" size="2">Resta a destino lo que haya en origen.</font></p>
+<font face="Arial" size="2">	<li><b>SBB</b> <i>destino</i>, <i>origen</i> (SuBstract with Borrow, restar con llevada) {O,S,Z,A,P,C}</li>
+	</font><p align="justify"><font face="Arial" size="2">Resta a destino lo que haya en origen. Si el flag C=1 resta uno más. Análoga a ADC.</font></p>
+<font face="Arial" size="2">	<li><b>DEC</b> <i>destino</i> (DECrement, decrementar) {O,S,Z,A,P}</li>
+	</font><p align="justify"><font face="Arial" size="2">Igual que INC, pero que resta 1 en vez de sumarlo.</font></p>
+
+<font face="Arial" size="2">	<li><b>IMUL</b> <i>origen</i> (Integer MULtiplication, multiplicación entera con signo) {O,C}</li>
+	</font><p align="justify"><font face="Arial" size="2">Multiplica <i>origen</i>, entero con signo (en complemento a dos), de longitud byte 
+	o word, por AL o AX respectivamente. Si <i>origen</i> es un byte el resultado se guarda en AX; si es 
+	tamaño word se almacena en el par DX-AX (parte alta en DX, parte baja en AX). Si las mitades de mayor 
+	peso son distintas de 0, sea cual sea el signo, CF y OF se ponen a  uno. En el caso del 386+, además, 
+	se puede usar un operando origen de 32 bits. Si es así se multiplica entonces por EAX, dejando el 
+	resultado de 64 bits en el par EDX-EAX. El operando debe ser un registro o un dato de 
+	memoria (nada de valores inmediatos). Esto se aplica para IMUL, MUL, IDIV y DIV.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2"><i>IMUL</i> tiene otras dos formas más para procesadores posteriores al 8086.
+	La primera es <b>IMUL</b> <i>destino, origen</i> donde el destino es un registro de propósito
+	general y el origen un valor inmediato, otro registro o una posición de memoria. La segunda forma tiene
+	el aspecto <b>IMUL</b> <i>destino, origen1, origen2</i>. <i>Destino</i> es nuevamente un registro de propósito
+	general, <i>origen1</i> un registro o posición de memoria, y <i>origen2</i> un valor inmediato. Lo que
+	hace es almacenar el producto de los dos operandos origen en destino. En cualquiera de las dos formas,
+	si el resultado del producto no cabe en el destino, queda truncado. Nos toca a nosotros comprobar, como 
+	siempre que sea necesario, los bits de overflow y carry (si se usa un único operando no hace falta, porque 
+	el destino siempre cabe).</font></p>
+<font face="Arial" size="2">	
+	<li><b>MUL</b> <i>origen</i> (MULtiplication, multiplicación entera sin signo) {O,C}</li>
+	</font><p align="justify"><font face="Arial" size="2">Como IMUL, salvo que multiplica enteros sin signo. Sólo admite la forma
+	con un único operando.</font></p>
+
+
+<font face="Arial" size="2">	<li><b>IDIV</b> <i>origen</i> (Integer DIVide, división entera con signo)</li>
+	</font><p align="justify"><font face="Arial" size="2">Divide números con signo. Calcula el cociente y el resto de dividir AX entre 
+	el operando (tamaño byte). Si el operando es de 16 bits lo que divide es el par DX-AX. Si el 
+	operando es de 32 bits (80386+), lo que divide es el par EDX-EAX. El cociente lo guarda 
+	en AL, AX o EAX según el caso. El resto en AH, DX o EDX. Si el cociente es mayor que
+	el tamaño máximo (8, 16 o 32 bits) tanto cociente como resto quedan indefinidos, y
+	salta una interrupción 0 (luego veremos cómo van estas cosas, pero te puedes hacer
+	una idea de que no es muy sano). Si divides por cero pasa lo mismo.</font></p>
+
+<font face="Arial" size="2">	<li><b>DIV</b> <i>origen</i> (DIVide, división entera sin signo)
+	<p align="justify">Igual que IDIV, sólo que para números sin signo.</p>
+
+<p>-<i> <u>INSTRUCCIONES DE SOPORTE ARITMÉTICO</u></i></p>
+	<p align="justify">La mayor parte de estas instrucciones sirven para <i>extender el signo</i>.
+	Ya hemos visto que puede suceder que tengamos que operar con un número repartido en dos
+	registros como DX-AX. Imagina que quieres cargar un entero con signo de 16 bits 
+	en estos dos registros: ¿qué haces con los otros 16 más altos? Si el entero es positivo
+	basta con poner a 0 DX, pero si es negativo tendrás que darle el valor 0FFFFh:</p>
+
+	<p></p><blockquote>1d = 0000 0001h<br>
+	-1d = FFFF FFFFh</blockquote><p></p>
+
+	<p align="justify">Como todo lo que sea abreviar comparaciones y saltos es siempre bienvenido, 
+	a alguien se le ocurrió hacer instrucciones especialmente para esta tarea. Puedes extender 
+	el signo dentro de un registro o hacia otro, trabajando fundamentalmente sobre el acumulador
+	(por lo que no son demasiado flexibles). Las MOVSX y MOVZX -del 386- darán más juego.</p>
+	</li><li><b>CWD</b> (Convert Word to Doubleword, convertir palabra a palabra doble)</li>
+	</font><p><font face="Arial" size="2">Extiende el signo de AX a DX, resultando el número DX-AX</font></p>
+<font face="Arial" size="2">	<li><b>CQD</b> (Convert Doubleword to Quad-word, convertir palabra doble a palabra cuádruple)
+	<p>Extiende el signo de EAX a EDX, resultando el número EDX-EAX</p>
+	</li><li><b>CBW</b> (Convert Byte to Word, convertir byte a palabra)</li>
+	</font><p><font face="Arial" size="2">Extiende el signo de AL a AH, resultando el número AX</font></p>
+<font face="Arial" size="2">	<li><b>CWDE</b> (Convert Word to Doubleword Extended, convertir palabra a palabra doble extendida)</li>
+	</font><p><font face="Arial" size="2">Extiende el signo de AX a EAX, resultando el número EAX</font></p>
+<font face="Arial" size="2">	<li><b>MOVSX</b> <i>destino</i>,<i>origen</i> (Move with Sign Extension, mover con extensión de signo)</li>
+	</font><p align="justify"><font face="Arial" size="2">Mueve origen a destino, extendiendo el signo. Si el destino es de 16 bits, 
+	origen ha de ser de 8. Si destino es de 32 bits, origen puede ser de 8 o de 16. Sólo
+	acepta mover a un registro (de datos).</font></p><p>
+<font face="Arial" size="2">	<li><b>MOVZX</b> <i>destino</i>,<i>origen</i> (Move with Zero Extension, mover con extensión de ceros)</li>
+	</font></p><p><font face="Arial" size="2">Exactamente como MOVZX, sólo que en vez de extender el signo rellena de 0s.</font></p>
+
+<font face="Arial" size="2">	<li><b>NEG</b> <i>destino</i> (NEGate, negar){O,S,Z,A,P,C}</li>
+	</font><p><font face="Arial" size="2">Cambia de signo el número en complemento a dos del destino. Equivale a hacer NOT y luego INC.</font></p>
+
+<p><font face="Arial" size="2">-<i><u>INSTRUCCIONES LÓGICAS</u></i></font></p>
+<font face="Arial" size="2">	<li><b>AND</b> <i>destino</i>,<i>origen</i></li>
+	<li><b>OR</b> <i>destino</i>,<i>origen</i></li>
+	<li><b>XOR</b> <i>destino</i>,<i>origen</i></li>
+	<li><b>NOT</b> <i>destino</i></li>
+	</font><p align="justify"><font face="Arial" size="2">Creo que si sabes lo que significan estas operaciones lógicas (si no revisa el capítulo 0), 
+	estarán bien claritas :)</font></p>
+
+<p><font face="Arial" size="2">-<i><u>DESPLAZAMIENTOS Y ROTACIONES</u></i></font></p>
+<font face="Arial" size="2">	<li><b>SAL</b> <i>destino</i>,<i>origen</i> (Shift Arithmetic Left, desplazamiento aritmético a la izquierda) {O,S,Z,P,C}</li>
+	<li><b>SAR</b> <i>destino</i>,<i>origen</i> (Shift Arithmetic Right, desplazamiento aritmético a la derecha) {O,S,Z,P,C}</li>
+
+	<li><b>SHL</b> <i>destino</i>,<i>origen</i> (SHift logic Left, desplazamiento lógico a la izquierda) {O,S,Z,P,C}</li>
+	<li><b>SHR</b> <i>destino</i>,<i>origen</i> (SHift logic Right, desplazamiento lógico a la derecha) {O,S,Z,P,C}<p></p>
+
+	</li><li><b>ROL</b> <i>destino</i>,<i>origen</i> (ROtate Left, rotación a la izquierda) {O,C}</li>
+	<li><b>ROR</b> <i>destino</i>,<i>origen</i> (ROtate Right, rotación a la derecha) {O,C}</li>
+
+	<li><b>RCL</b> <i>destino</i>,<i>origen</i> (Rotate with Carry Left, rotación a la izquierda con carry) {O,C}</li>
+	<li><b>RCR</b> <i>destino</i>,<i>origen</i> (Rotate with Carry Right, rotación a la derecha con carry) {O,C}</li>
+
+	</font><p align="justify"><font face="Arial" size="2">Ambas desplazan o rotan el operando destino hacia el sentido indicado tantas veces como 
+	diga el operando origen. Este último operando puede ser un valor inmediato o CL.</font></p>
+<font face="Arial" size="2">	
+	</font><center><font face="Arial" size="2"><img src="CAP6_files/ROTACIONES.jpg" width="45%"></font></center>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Es bueno recordar que desplazar un número a la izquierda un bit equivale a multiplicar por dos, 
+	y desplazarlo a la derecha dividir entre dos. Cuando queramos realizar alguna de estas operaciones en un factor
+	potencia de dos siempre será mucho más rápido desplazar un registro (o varios, propagando el carry)
+	que realizar una multiplicación/división. Hilando un poco más fino, si tenemos que multiplicar un número
+	por algo que no sea una potencia de dos pero "se le parezca mucho", el método puede seguir compensando. Para
+	multiplicar por 20 podemos hacer una copia del registro, desplazarlo por un lado 4 bits (para multiplicar
+	por 16) y por otro 2 bits (para multiplicar por 4), y sumar ambos resultados parciales. Si nuestro procesador
+	está un poco pasado de moda (386-486) puede que la mejora sea aún significativa.</font></p>
+
+<p><font face="Arial" size="2">-<i><u>INSTRUCCIONES DE COMPARACIÓN</u></i></font></p>
+<font face="Arial" size="2">	<li><b>CMP</b> <i>operando1</i>,<i>operando2</i> (CoMPare, comparar) {O,S,Z,A,P,C}</li>
+	</font><p align="justify"><font face="Arial" size="2">Funciona exactamente igual que SUB solamente que sin almacenar el resultado 
+	(o sea, efectua la operación operando1-operando2, alterando los flags en consecuencia). Al 
+	igual que la instrucción CMP del motorola se utiliza antes de efectuar un salto condicional.</font></p>
+<font face="Arial" size="2">	<li><b>TEST</b> <i>operando1</i>,<i>operando2</i> (TEST, comprobar) {O,S,Z,A,P,C}</li>
+	</font><p><font face="Arial" size="2">Como la anterior, pero con la operación AND en lugar de SUB.</font></p>
+
+<p><font face="Arial" size="2">-<i><u>INSTRUCCIONES DE SALTO</u></i></font></p>
+<font face="Arial" size="2">	<li><b>JMP</b> <i>dirección</i> (JuMP, saltar)</li>
+	</font><p align="justify"><font face="Arial" size="2">Salta a la dirección indicada. Este salto puede ser tanto lejano como cercano, 
+	y la dirección puede venir dada en valor inmediato (generalmente mediante una etiqueta) o
+	en memoria. Un salto cercano tiene lugar dentro del mismo segmento (llamado también salto intrasegmento
+	por este motivo), cargando IP (EIP en modo protegido) con el nuevo offset. Los saltos lejanos
+	cambiar el valor tanto de IP(EIP) como de CS.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">El tipo de salto se puede indicar con la dirección mediante los 
+	prefijos <b>near</b> o <b>far</b> en cada caso. Existe un tercer tipo de salto denominado 
+	<i>corto</i> indicado por el prefijo <b>short</b>, cuya dirección viene 
+	codificada en un byte. Este último salto es en realidad una forma abreviada de expresar un salto 
+	cercano, donde en lugar de indicar la dirección a la que se salta, se especifica la distancia
+	desde la posición actual como un número de 8 bits en complemento a dos.</font></p>
+
+<font face="Arial" size="2">	<li><b>Jcc</b> <i>dirección</i></li>
+	</font><p align="justify"><font face="Arial" size="2">"cc"
+representa la condición. Si la condición es verdadera, salta. En caso
+contrario, continúa la ejecución. Las distintas condiciones se
+presentan en la tabla inferior. El ensamblador de Intel tiene algunos
+mnemónicos distintos para las mismas instrucciones, lo cual viene muy
+bien para recordar qué comparación usar en cada caso. Por ejemplo, JZ
+(saltar si cero) y JE (saltar si iguales) son exactamente la misma
+instrucción. Una curiosidad: en el 8086 los saltos condicionales sólo
+podían ser cortos (lo que significa que la distancia se codificaba en
+un byte), obligando a utilizar la comparación contraria y un JMP para
+poder saltar a más de 127/128 bytes de distancia. En el 80386 estos
+saltos son de hasta 32 bits, con lo que prácticamente no tenemos
+limitación alguna. Si queremos saltar cuando el bit de carry sea 1,
+podemos hacerlo con algo como JC <i>etiqueta</i> y olvidarnos de todo lo demás.</font></p>
+<font face="Arial" size="2">	<table border="1">
+	<tbody>
+	<tr><th><font face="Arial" size="2">Instrucción</font></th>
+	    <th></th>
+	    <th></th>
+	    <th><font face="Arial" size="2">Condición</font></th>
+
+	</tr>
+	<tr><td><font face="Arial" size="2">JZ</font></td>
+	    <td><font face="Arial" size="2">Jump if Zero</font></td>
+	    <td><font face="Arial" size="2">salta si cero</font></td>
+  	    <td><font face="Arial" size="2">ZF=1</font></td></tr>
+	<tr><td><font face="Arial" size="2">JNZ</font></td>
+	    <td><font face="Arial" size="2">Jump if Not Zero</font></td>
+	    <td><font face="Arial" size="2">salta si no cero</font></td>
+  	    <td><font face="Arial" size="2">ZF=0</font></td></tr>
+	<tr><td><font face="Arial" size="2">JC</font></td>
+	    <td><font face="Arial" size="2">Jump if Carry</font></td>
+	    <td><font face="Arial" size="2">salta si acarreo</font></td>
+  	    <td><font face="Arial" size="2">CF=1</font></td></tr>
+	<tr><td><font face="Arial" size="2">JNC</font></td>
+	    <td><font face="Arial" size="2">Jump if Not Carry</font></td>
+	    <td><font face="Arial" size="2">salta si no acarreo</font></td>
+  	    <td><font face="Arial" size="2">CF=0</font></td></tr>
+	
+	<tr><td><font face="Arial" size="2">JO</font></td>
+	    <td><font face="Arial" size="2">Jump if Overflow</font></td>
+	    <td><font face="Arial" size="2">salta si overflow</font></td>
+  	    <td><font face="Arial" size="2">OF=1</font></td></tr>
+	<tr><td><font face="Arial" size="2">JNO</font></td>
+	    <td><font face="Arial" size="2">Jump if Not Overflow</font></td>
+	    <td><font face="Arial" size="2">salta si no overflow</font></td>
+  	    <td><font face="Arial" size="2">OF=0</font></td></tr>
+
+	<tr><td><font face="Arial" size="2">JS</font></td>
+	    <td><font face="Arial" size="2">Jump if Sign</font></td>
+	    <td><font face="Arial" size="2">salta si signo</font></td>
+  	    <td><font face="Arial" size="2">SF=1</font></td></tr>
+	<tr><td><font face="Arial" size="2">JNO</font></td>
+	    <td><font face="Arial" size="2">Jump if Not Sign</font></td>
+	    <td><font face="Arial" size="2">salta si no signo</font></td>
+  	    <td><font face="Arial" size="2">SF=0</font></td></tr>
+
+	<tr><td><font face="Arial" size="2">JP/JPE</font></td>
+	    <td><font face="Arial" size="2">Jump if Parity (Parity Even)</font></td>
+	    <td><font face="Arial" size="2">salta si paridad (Paridad Par)</font></td>
+  	    <td><font face="Arial" size="2">PF=1</font></td></tr>
+	<tr><td><font face="Arial" size="2">JNP/JPO</font></td>
+	    <td><font face="Arial" size="2">Jump if Not Parity (Parity Odd)</font></td>
+	    <td><font face="Arial" size="2">salta si no paridad (Paridad Par)</font></td>
+  	    <td><font face="Arial" size="2">PF=0</font></td></tr>
+	</tbody>
+	</table>
+
+	</font><p align="justify"><font face="Arial" size="2">Cuando queremos hacer un salto condicionado por una comparación, y no 
+	directamente por el estado de los flags, lo que hacemos es una comparación CMP A,B. A 
+	continuación usamos una instrucción de salto de entre las siguientes:</font></p>
+
+<font face="Arial" size="2">	<table border="1">
+	<tbody>
+	<tr><th><font face="Arial" size="2">Instrucción</font></th>
+	    <th></th>
+	    <th></th>
+	    <th><font face="Arial" size="2">Condición</font></th>
+
+	</tr>
+	<tr><td><font face="Arial" size="2">JA</font></td>
+	    <td><font face="Arial" size="2">Jump if Above</font></td>
+	    <td><font face="Arial" size="2">salta si por encima</font></td>
+  	    <td><font face="Arial" size="2">A&amp;gtB (sin signo)</font></td></tr>
+	<tr><td><font face="Arial" size="2">JAE</font></td>
+	    <td><font face="Arial" size="2">Jump if Above or Equal</font></td>
+	    <td><font face="Arial" size="2">salta si por encima o igual</font></td>
+  	    <td><font face="Arial" size="2">A&gt;=B (sin signo)</font></td></tr>
+	<tr><td><font face="Arial" size="2">JB</font></td>
+	    <td><font face="Arial" size="2">Jump if Below</font></td>
+	    <td><font face="Arial" size="2">salta si por debajo</font></td>
+  	    <td><font face="Arial" size="2">A&amp;ltB (sin signo)</font></td></tr>
+	<tr><td><font face="Arial" size="2">JBE</font></td>
+	    <td><font face="Arial" size="2">Jump if Below or Equal</font></td>
+	    <td><font face="Arial" size="2">salta si por debajo o igual</font></td>
+  	    <td><font face="Arial" size="2">A&lt;=B (sin signo)</font></td></tr>
+
+	<tr><td><font face="Arial" size="2">JE</font></td>
+	    <td><font face="Arial" size="2">Jump if Equal</font></td>
+	    <td><font face="Arial" size="2">salta si igual</font></td>
+  	    <td><font face="Arial" size="2">A=B</font></td></tr>
+	
+	<tr><td><font face="Arial" size="2">JG</font></td>
+	    <td><font face="Arial" size="2">Jump if Greater</font></td>
+	    <td><font face="Arial" size="2">salta si mayor</font></td>
+  	    <td><font face="Arial" size="2">A&amp;gtB (con signo)</font></td></tr>
+	<tr><td><font face="Arial" size="2">JGE</font></td>
+	    <td><font face="Arial" size="2">Jump if Greater or Equal</font></td>
+	    <td><font face="Arial" size="2">salta si mayor o igual</font></td>
+  	    <td><font face="Arial" size="2">A&gt;=B (con signo)</font></td></tr>
+	<tr><td><font face="Arial" size="2">JL</font></td>
+	    <td><font face="Arial" size="2">Jump if Less</font></td>
+	    <td><font face="Arial" size="2">salta si menor</font></td>
+  	    <td><font face="Arial" size="2">A&amp;ltB (con signo)</font></td></tr>
+	<tr><td><font face="Arial" size="2">JLE</font></td>
+	    <td><font face="Arial" size="2">Jump if Less or Equal</font></td>
+	    <td><font face="Arial" size="2">salta si menor o igual</font></td>
+  	    <td><font face="Arial" size="2">A&lt;=B (con signo)</font></td></tr>
+	</tbody>
+	</table>
+
+	</font><p align="justify"><font face="Arial" size="2">CMP equivalía a una resta que no modificaba los operandos; si queremos
+	saltar si A&lt;B, podemos hacer <i>CMP A,B</i>. Si A&lt;B al hacer la resta me llevaré
+	una, por lo que el bit de carry se pondrá a 1. Vemos que JC es equivalente a JB. Con
+	similares deducciones se pueden obtener algunos saltos más; otros, sin embargo, dependen
+	del resultado de dos flags al tiempo ("menor o igual" saltará con CF=1 y ZF=1), por
+	lo que sus mnemónicos corresponderán a instrucciones nuevas.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Para poner las cosas aún más fáciles, existen <b>JNA,JNAE,JNB,JNBE,JNE,JNG,
+	JNGE,JNL, JNLE.</b> No hacía falta que estuvieran, porque son equivalentes a JBE,JB,JAE,JA,JNZ,
+	JLE,JL y JG, pero así nos evitan pensar un poco. Una N delante indica la condición contraria. 
+	Si uno no quiere líos, basta que recuerde que Below/Above son para números sin signo y Less/Greater 
+	para con signo.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Una instrucción de salto muy útil en combinación con las siguientes (LOOP y 
+	variaciones) es <b>JCXZ</b> (Jump if CX is Zero, salta si CX es cero), o <b>JECXZ</b> si estamos
+	operando en 32 bits.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Para hacer ciclos (algo así como <i>for i=1 to 10</i>) la familia del 8086 
+	cuenta con LOOP y la pareja LOOPE/LOOPZ (mnemónicos de lo mismo)</font></p>
+<font face="Arial" size="2">	<li><b>LOOP</b> <i>dirección</i> (LOOP, ciclo)</li>
+	</font><p align="justify"><font face="Arial" size="2">Decrementa CX y si el resultado es distinto de 0 salta a la dirección dada. 
+	Estrictamente hablando no es una dirección sino un desplazamiento en el rango +127/-128 bytes respecto
+	a IP para el 8086, o +(2^31-1)/(-2^31) para el 80386, igual que las instrucciones Jcc. Al programar
+	no usaremos desplazamientos ni direcciones absolutas, sino etiquetas que se encargará de sustituir
+	el ensamblador, por lo que no debe (en principio) pasar de ser una anécdota.</font></p>
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2"><b>LOOPZ</b>/<b>LOOPE</b> tienen la misma sintaxis que LOOP. Lo que hacen es 
+	decrementar	CX y saltar a la dirección dada si CX es distinto de 0 y ZF=1. La idea es efectuar 
+	un ciclo con una condición dada, que se repita un máximo de CX veces. Cuando el modo de 
+	funcionamiento es de 32 bits LOOP, LOOPE y LOOPZ operan sobre ECX. <b>LOOPNZ/LOOPNE</b> 
+	son iguales a los anteriores, sólo que la condición adicional al salto es ZF=0 en vez de 
+	ZF=1.</font></p>
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Como cuando CX=0 (ECX=0) estos ciclos se ejecutan en principio 2^16 (2^32)
+	veces, podemos evitarlo mediante el uso de JCXZ (JECXZ) justo antes del ciclo.</font></p>
+
+<p><font face="Arial" size="2">-<i><u>MANEJO DE LA PILA</u></i></font></p>
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Mencionamos ya brevemente en el capítulo II en qué consiste la pila. Ahora veremos
+	exactamente qué es, así como para qué y cómo se usa.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Los programas se dividen básicamente en una zona de datos y otra de código,
+	habitualmente cada cada una en su región de memoria asociada a un valor de registro de segmento (lo que se
+	llama, simplemente, un segmento). Siempre hay al menos un tercer segmento llamado <i>pila</i>,
+	de suma utilidad en los microprocesadores. En él se almacenan valores temporales como las variables
+	locales de las funciones, o las direcciones de retorno de éstas. Una función no es más que una
+	subrutina, o un fragmento de código al que se le llama generalmente varias veces desde el programa
+	principal, o desde una función jerárquicamente superior. Cuando se <i>llama</i> a una función
+	se hace un mero salto al punto donde empieza ese código. Sin embargo esa subrutina puede
+	ser llamada desde distintos puntos del programa principal, por lo que hay que almacenar
+	en algún sitio la dirección desde donde se hace la llamada, cada vez que esa llamada
+	tiene lugar, para que al finalizar la ejecución de la función se retome el programa
+	donde se dejó. Esta dirección puede almacenarse en un sitio fijo (como hacen algunos
+	microcontroladores), pero eso tiene el inconveniente de que si esa función a su vez
+	llama a otra función (¡o a sí misma!) podemos sobreescribir la dirección de retorno
+	anterior, y al regresar de la segunda llamada, no podríamos volver desde la primera.
+	Además, es deseable que la función guarde los valores de todos los registros que vaya
+	a usar en algún sitio, para que el que la llame no tenga que preocuparse de ello
+	(pues si sabe que los registros van a ser modificados, pero no sabe cuáles, los guardará
+	todos por si acaso). Todas estas cosas, y algunas más, se hacen con la pila.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">El segmento de pila está indicado por SS, y el desplazamiento
+	dentro del segmento, por SP (o ESP si estamos en 32 bits; todo lo que se diga de SP
+	de aquí en adelante será aplicable a ESP, salvo, como se suele decir, error u omisión).</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Cuando arranca el programa, SP apunta al final del segmento de pila.
+	En el caso de los programas de tipo EXE en MSDOS, por ejemplo, el tamaño que se reserva
+	a la pila viene indicado en el ejecutable (que solicita al sistema operativo 
+	ese hueco; si no hay memoria suficiente para el código, los datos y la pila, devuelve
+	mensaje de memoria insuficiente y no lo ejecuta). En otros, puede que el tamaño lo asigne el
+	sistema operativo según su conveniencia. El caso es que la manera de meter algo
+	en la pila es decrementar SP para que apunte un poco más arriba y copiarlo a esa posición 
+	de memoria, SS:SP. Para sacarlo, copiamos lo que haya en SS:SP a nuestro destino, e
+	incrementamos el puntero.</font></p>
+<font face="Arial" size="2">	
+	</font><p align="justify"><font face="Arial" size="2">Como con todo lo que se hace con frecuencia, hay dispuestas instrucciones propias
+	para el manejo de la pila. Las dos básicas son <b>PUSH</b> <i>origen</i> (empujar) y <b>POP</b> 
+	<i>destino</i> (sacar). La primera decrementa el puntero de pila y copia a la dirección 
+	apuntada por él (SS:SP) el operando origen (de tamaño múltiplo de 16 bits), mientras que 
+	la segunda almacena el contenido de la pila (elemento apuntado por SS:SP) en <i>destino</i> 
+	y altera el puntero en consecuencia. Si el operando es de 16 bits se modifica en 2 unidades, 
+	de 32 en 4, etc. Lo que se incrementa/decrementa es siempre SP, claro, porque SS nos indica
+	dónde está ubicado el segmento de pila.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2"><b>PUSHA</b> y <b>POPA</b> (de PUSH All y POP All) almacenan en la pila o 
+	extraen de la pila respectivamente los registros básicos. Para PUSHA se sigue este orden (el 
+	inverso para POPA): AX,CX,DX,BX,SP,BP,SI,DI. En el caso de los registros extendidos lo que tenemos 
+	son <b>PUSHAD</b> y <b>POPAD</b>, empujando a la pila entonces EAX,ECX,EDX,EBX,ESP,EBP,ESI,EDI. El 
+	puntero de pila que se introduce en la misma es el que hay antes de empujar AX/EAX. Cuando se ejecuta 
+	POPA el contenido de SP/ESP de la pila no se escribe, sino que "se tira". Se emplean generalmente al 
+	principio y final de una subrutina, para preservar el estado del micro.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">No creo que nadie vaya a programar exactamente en un 386, pero si alguien quisiera
+	tener en cuenta a estos procesadores tendría que considerar que la mayoría tienen un defecto de
+	diseño por el cual POPAD no restaura correctamente el valor de EAX. Para evitarlo basta colocar la
+	instrucción NOP detrás de aquélla.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2"><b>PUSHF</b> y <b>POPF</b> (PUSH Flags y POP Flags) empujan a la pila o recuperan 
+	de ella el registro de flags.</font></p>
+
+<p><font face="Arial" size="2">-<i><u>MANEJO DE SUBRUTINAS</u></i></font></p>
+<font face="Arial" size="2">	<li><b>CALL</b> <i>dirección</i> (CALL, llamar)</li>
+	</font><p align="justify"><font face="Arial" size="2">Empuja a la pila la dirección de retorno (la de la 
+	siguiente instrucción) y salta a la dirección dada. Como en los saltos: una llamada
+	<i>cercana</i> cambia el offset (IP/EIP), mientras que una <i>lejana</i> cambia offset
+	y segmento (CS:IP/CS:EIP). Sólo empuja a la pila los registros que modifica con el salto
+	(se habla de punteros cercanos o lejanos en cada caso). El tipo de salto se indica
+	con un prefijo a la dirección, como con JMP: NEAR para cercano, FAR para lejano.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">En vez de la dirección admite también un operando en memoria con
+	cualquier modo de direccionamiento indirecto, cargando entonces IP/EIP o CS:IP/CS:EIP
+	con el puntero almacenado en esa posición de memoria. También se puede hacer un salto
+	cercano al valor almacenado en un registro (de 16 bits o 32 bits según el caso).
+	Para las direcciones de retorno que se guardan en la pila, o los punteros en memoria
+	que se cargan, hay que recordar que en caso de ser un puntero lejano primero se almacena 
+	el offset y luego el segmento. A ver, para no liarla, vamos con algunos
+	ejemplos de llamadas:</font></p>
+<font face="Arial" size="2">	</font><p></p><blockquote><font face="Arial" size="2"><i>call near etiqueta</i>; salta a la dirección donde se encuentre la etiqueta<br>
+	<i>call far [di]</i>; salta a la dirección almacenada en la posición [ds:di] como segmento:offset<br>
+	<i>call ebx</i>; salta al offset ebx (se sobreentiende que es near)</font></blockquote><p></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Si se omite <i>far</i>, se da por sentado que es una llamada cercana,
+	pero por claridad recomiendo ponerlo siempre explícitamente.</font></p>
+
+<font face="Arial" size="2">	<li><b>RET,IRET</b> (RETurn, regresar)</li>
+	</font><p align="justify"><font face="Arial" size="2">Extrae una dirección de la pila y salta a ella. Puede ser un retorno cercano 
+	mediante <b>RETN</b> (Near) o lejano mediante <b>RETF</b> (Far); en el primer caso extrae
+	el offset y en el segundo segmento y offset. Con el uso genérico de la instrucción RET
+	el ensamblador elige la apropiada; sin embargo es buena costumbre indicarlo 
+	igual que con call. Es muy importante que la subrutina deje la pila como estaba justo
+	al ser llamada para que la dirección de retorno quede en la parte superior, pues de 
+	lo contrario al llegar a RET saltaríamos a cualquier sitio menos la dirección correcta.
+	<b>IRET</b> es el retorno de una interrupción; además	de volver, restaura el registro de 
+	flags. Al acudir a una interrupción este registro se guarda en la pila. De momento no
+	trataremos interrupciones.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">La pila sirve no sólo para guardar los registros temporalmente o las
+	direcciones de retorno, sino también las variables locales, que son imprescindibles para
+	una programación cabal.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">La idea es que cuando vamos a llamar a una subrutina, echamos primero
+	a la pila los argumentos que va a necesitar. Luego la subrutina, nada más arrancar salva 
+	en la pila los valores de los registros que considera necesarios, y "abre un hueco" 
+	encima de éstos, decrementando el puntero de pila en tantas unidades como necesite. La 
+	ventaja fundamental de esto es que cada llamada a la función "crea" su propio espacio para 
+	variables locales, de modo que una función puede llamarse a sí misma sin crear conflictos 
+	entre las variables de la función "llamadora" y "llamada" (<i>caller</i> y <i>callee</i> en 
+	algunos textos ingleses, aunque no estoy muy seguro de que el segundo término sea muy correcto). 
+	El único problema que tenemos ahora es que una vez abierto el hueco y determinadas las 
+	posiciones que ocuparán dentro de la pila nuestras variables, puede suceder que queramos
+	echar más cosas a la pila, con lo que SP/ESP se desplazará arriba y abajo durante la
+	ejecución de la subrutina; llevar la cuenta de en dónde se encuentra cada variable
+	a lo largo de la función es algo poco práctico, y con lo que es fácil equivocarse.
+	Sucede aquí que tenemos un registro que usa por defecto el segmento de pila: BP (nuevamente 
+	se ha de entender que lo que se aplica a SP,BP es extensible a ESP,EBP). 
+	Éste es el registro que emplearemos como puntero inamovible para señalar a argumentos 
+	y variables locales, para que no perdamos la pista de estos datos hagamos lo que hagamos
+	con SP. Primero lo haremos todo paso a paso porque es importante entender el 
+	procedimiento:</font></p>
+
+<font face="Arial" size="2">	</font><p><font face="Arial" size="2">Vamos a crear una subrutina en modo real que sume dos números de 16 bits (un poco 
+	estúpido, pero es para hacerlo lo más simple posible). El programa principal haría algo 
+	así:</font></p>
+
+<p></p><pre><font face="Arial" size="2"><font face="Arial" size="2">
+...
+<i>push word </i> [Sumando1]
+<i>push word </i> [Sumando2]
+<i>sub</i> sp,2	;hueco para el resultado (queremos que nos lo devuelva en la pila)
+<i>call</i> SumaEstupida
+<i>pop word </i> [Resultado]	;saca el resultado
+<i>add</i> sp,4	;elimina los sumandos de la pila
+...
+
+y la subrutina sería:
+
+SumaEstupida:
+	;SP apunta a la dirección de retorno, SP+2 al resultado, SP+4 a Sumando2, SP+6 a Sumando1
+	<i>push</i> bp		;ahora SP+4 apunta al resultado, SP+6 a Sumando2 y SP+8 a Sumando1
+	<i>mov</i> bp,sp 		;BP+4 apunta al resultado, BP+6 a Sumando2 y BP+8 a Sumando1
+	<i>push</i> ax 		;altero SP pero me da igual, porque tengo BP como puntero a los argumentos
+	<i>mov</i> ax,[bp+6]	;cargo el Sumando2
+	<i>add</i> ax,[bp+8]	;le añado el Sumando1
+	<i>mov</i> [bp+4],ax	;almaceno el resultado
+	<i>pop</i> ax		;restauro AX
+	<i>pop</i> bp		;restauro BP
+	<i>retn</i>
+<p></p></font></font></pre>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Mediante la directiva EQU podemos hacer por ejemplo SUM1=BP+8 tal que para referirnos 
+	al sumando 1 hagamos [SUM1], y así con el resto. <b>RET</b> admite un operando inmediato
+	que indica el número de bytes que queremos desplazar el puntero de pila al regresar. De
+	esta manera, si colocamos primero el hueco para el resultado y luego los sumandos, 
+	mediante un "RETN 4" podemos ahorrarnos "ADD SP,4" tras la llamada. Algunos lenguajes de
+	alto nivel hacen las llamadas a funciones de esta manera; no así el C. Usar un ADD en 
+	lugar de un "RET x" tiene la ventaja de que podemos usar un número variable de 
+	argumentos por pila; en general al que mezcle ensamblador con C le parecerá la mejor
+	alternativa.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Los procesadores 286+ proporcionan un método alternativo de realizar estas operaciones
+	tan comunes en los lenguajes de alto nivel con un cierto nivel de sofisticación. La primera
+	instrucción al respecto es <b>ENTER</b>, que recibe dos operandos. El primero indica
+	la cantidad de memoria que se reservará en la pila, en bytes (asignación de espacio
+	a variables locales). El segundo es el llamado <i>nivel de anidamiento</i> del 
+	procedimiento, y hace referencia a la jerarquía que presentan las variables en el
+	programa; determinará qué variables serán visibles para la función que ha sido llamada.
+	Esto encierra bastantes sutilezas que corresponden a cómo se construye el código máquina
+	de este tipo de estructuras y a este nivel no interesa meterse en berenjenales; si
+	hubiera que usar ENTER, dejaríamos el segundo operando a 0.	Quedémonos úicamente con 
+	que si quisiéramos reservar 4 bytes para variables locales, 
+	usaríamos la instrucción "ENTER 4,0"; empuja BP, copia SP en BP, decrementa SP en 4.</font></p>
+<font face="Arial" size="2">	</font><p><font face="Arial" size="2">La instrucción que deshace el entuerto es <b>LEAVE</b>, sin argumentos. Lo único
+	que hace es copiar BP en SP para liberar el espacio reservado, y a continuación
+	restaurar BP desde la pila.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Para ver en más detalle el manejo de la pila en las subrutinas, así como las 
+	posibilidades de ENTER/LEAVE y el concepto de nivel de anidamiento de un procedimiento 
+	recomiendo acudir a la documentación Intel, al texto "Intel Architecture Software 
+	Developer's Manual Volume 1: Basic Architecture", que pese a lo que aparenta es un 
+	texto muy legible. Este tema lo aborda el capítulo 4, más concretamente en "Procedure
+	calls for block-structured languages". Si alguien está pensando en mezclar C con
+	ensamblador encontrará este texto de gran interés.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">El programador de la subrutina ha de tener muy en cuenta dos cosas. La primera, si
+	la subrutina va a ser llamada desde el mismo segmento u otro (llamada cercana o lejana), 
+	pues dependiendo de ello CALL introduce distinto número de elementos en la pila. La 
+	segunda es si estamos programando en 16 o en 32 bits, que nos determinará las dimensiones 
+	de lo que echemos a la pila. Cualquier consideración errónea de este tipo nos hará intentar
+	acceder a los argumentos en posiciones equivocadas de la pila.</font></p>
+
+<p><font face="Arial" size="2">-<i><u>INSTRUCCIONES PARA OBTENER DIRECCIONES</u></i></font></p>
+<font face="Arial" size="2">	<li><b>LEA</b> <i>destino</i>,<i>origen</i> (Load Effective Address, cargar dirección efectiva)</li>
+	</font><p align="justift"><font face="Arial" size="2">Carga la dirección efectiva del operando <i>origen</i> en <i>destino</i>. "LEA AX,[BX+DI+2]"
+	calcularía la suma BX+DI+2 e introduciría el resultado en AX (y no el <i>contenido</i> de
+	la dirección apuntada por BX+DI+2, pues eso sería un MOV). Como destino no se puede usar
+	un registro de segmento. Si el destino es de 32 bits, el offset que se carga es de este tipo.
+	En modo protegido sólo usaremos este último, pues offsets de 16 bits carecerán de sentido.</font></p>
+<font face="Arial" size="2">	<li><b>LDS</b> <i>destino</i>,<i>origen</i> (Load pointer using DS, cargar puntero usando DS)</li>
+	</font><p align="justift"><font face="Arial" size="2">Esta instrucción y sus variantes ahorran mucho tiempo e instrucciones en la carga de 
+	punteros. <i>origen</i> será siempre memoria conteniendo un puntero, es decir, 
+	un segmento y un desplazamiento. La primera palabra corresponde al offset y la segunda 
+	al segmento. El offset se carga en <i>destino</i> y el segmento en DS. Si estamos trabajando en un modo 
+	de 32 bits el desplazamiento será de 32 bits y el segmento de 16. Existen más instrucciones, 
+	una por cada registro de segmento: <b>LES,LFS,LGS</b> y <b>LSS</b> (mucho cuidadito con
+	esta última, porque nos desmadra la pila).</font></p>
+
+<p><font face="Arial" size="2">-<i><u>INSTRUCCIONES DE MANEJO DE BITS</u></i></font></p>
+<font face="Arial" size="2">	<li><b>BT/BTS/BTR/BTC</b> <i>registro</i>,<i>operando</i> (Bit Test/Test&amp;Set/Test&amp;Reset/Test&amp;Complement</li>
+	</font><p align="justify"><font face="Arial" size="2">Estas instrucciones lo primero que hacen es copiar el bit del registro indicado por 
+	el operando, sobre el bit de carry. El operando puede ser un registro o un valor
+	inmediato de 8 bits. Una vez hecho esto no hace nada (BT), lo pone a 1 (BTS), lo pone
+	a 0 (BTR) o lo complementa (BTC) según corresponda.</font></p>
+
+<p><font face="Arial" size="2">-<i><u>INSTRUCCIONES DE CADENA</u></i></font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Hay un conjunto de instrucciones conocido a veces como "de cadena", que 
+	sirven para mover y comparar elementos dispuestos en array, incrementándose cada vez
+	el puntero a la cadena. Éstas se ven afectadas por el bit de dirección (que indica
+	el sentido en que se recorre la cadena). Mediante la instrucción <b>STD</b> (SeT
+	Direction flag) hacemos DF=1, y con <b>CLD</b> (CLear Direction flag) DF=0</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2"><b>LODSB</b> y <b>LODSW</b> (LOaD String, Byte y LOad String, Word), sin 
+	operandos, leen el byte o palabra en la dirección dada por DS:SI(ESI) y la almacenan en AL o 
+	AX respectivamente. Podemos usar en su lugar <b>LODS</b> <i>operando</i>, con un operando
+	en memoria, especificando con ello si se trata de un LODSB o LODSW según el tipo.
+	Si el operando lleva <i>segment override</i> será de este segmento de donde se tomen
+	los datos con SI. Por claridad es preferible usar LODSB o LODSW.</font></p>
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">¿Qué tiene todo esto que ver con lo mencionado sobre el flag de dirección? Si el DF=0
+	SI se incrementa en uno para LODSB y dos para LODSW (apunta al siguiente byte/palabra).
+	Si DF=1 se lee el array en dirección inversa, es decir, SI se decrementa. Así, por 
+	ejemplo, podemos ir cargando en el acumulador el contenido de un array a lo largo de
+	un ciclo para operar con él.</font></p>
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2"><b>STOSB</b> y <b>STOSW</b> (STOre String, Byte/Word) funcionan con el mismo
+	principio en cuanto al flag de dirección, y lo que hacen es almacenar en ES:DI(EDI) el
+	contenido del acumulador (AL o AX según cada caso). De manera análoga podemos
+	usar <b>STOS</b> <i>operando</i>.</font></p>
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2"><b>MOVSB</b> y <b>MOVSW</b> (MOV String, Byte/Word) van más allá; mueven el byte
+	o palabra en DS:SI a ES:DI. Vemos ahora que SI es el <i>Source Index</i> o índice
+	fuente, y DI el <i>Destination Index</i> o índice destino. Tras el movimiento de datos
+	SI y DI son incrementados o decrementados siguiendo la lógica descrita para LODS.
+	Es admisible además la instrucción MOVS <i>destino</i>,<i>origen</i> (ambos operandos
+	en memoria). El ensamblador emplea los operandos para determinar si se trata de un
+	MOVSB o MOVSW al codificar la instrucción correspondiente; además el operando origen
+	puede llevar un prefijo de segmento (no así el destino) en cuyo caso se emplea ése
+	registro de segmento como origen.</font></p>
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">¡Ajajá, así que ahora podemos mover arrays de bytes o palabras metiendo 
+	estas instrucciones en un ciclo, olvidándonos de andar manipulando los registros índice!
+	Pues no. Es decir, sí, claro que se puede, pero no se hace así. Existe un prefijo
+	llamado <b>REP</b> que se coloca antes de la instrucción de cadena en cuestión, que
+	lo que hace es repetir el proceso tantas veces como indique CX(ECX). Supongamos que
+	queremos llenar de ceros 100 bytes a partir de la posición A000h:0000h. Podemos
+	currarnos un ciclo que maneje un índice, empezar a hacer mov's de 0s a [di]..
+	Una solución (en 16 bits) más inteligente y rápida sería:</font></p>
+<font face="Arial" size="2">	</font><p><font face="Arial" size="2">mov cx,50d<br>
+	mov ax,0A000h<br>
+	mov es,ax<br>
+	xor di,di<br>
+	xor ax,ax<br>
+	rep stosw</font></p>
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Como cada palabra son 2 bytes, lo que hacemos es cargar CX con 50 (pondremos a 0
+	50 palabras), apuntar con ES:DI al primer elemento, poner AX a 0, y empezar a almacenar
+	AX en cada posición, hasta 50 veces. Al finalizar ese fragmento de código DI contendrá
+	el valor 100, pues se ha incrementado en 2 en cada repetición del ciclo.</font></p>
+<font face="Arial" size="2">	</font><p><font face="Arial" size="2">Pero como se suele decir, aún hay más. <b>SCASB</b> y <b>SCASW</b> (SCAn String)
+	realizan la comparación "CMP AL,ES:[DI]" o "CMP AX,ES:[DI]", alterando lógicamente los 
+	flags, y a continuación modificando DI como es debido. (Existe SCAS <i>operando</i> con
+	idénticas consideraciones a las anteriores instrucciones de cadena con operando en 
+	memoria).<b>CMPSB</b> y <b>CMPSW</b> (CoMPare String) equivalen a "CMP DS:[SI],ES:[DI]" 
+	tamaño byte o word según corresponda, alterando los flags en función de la comparación
+	e incrementando SI y DI según el tamaño del dato y el flag de dirección (habiendo
+	asimismo un CMPS que funciona análogamente a MOVS en cuanto a llevar operandos en
+	memoria). Esto puede no parecer impresionante (ya que REP aquí no pinta nada), pero es 
+	que existen dos prefijos (en realidad 4, pero son parejas de mnemónicos de instrucciones
+	idénticas) más, <b>REPE/REPZ</b> y <b>REPNE/REPNZ</b>. Estos prefijos funcionan como REP
+	en cuanto a que repiten la instrucción que preceden tantas veces como indique CX excepto
+	en que <i>además</i> ha de verificarse la condición que representan. REPZ se repite
+	mientras el flag de cero esté a uno (REPeat while Zero), mientras que REPNZ se repite,
+	lógicamente, mientras esté a cero (REPeat while Not Zero). De esta manera es muy fácil
+	realizar un código que localice una determinada palabra dentro de un array, o que
+	encuentre la diferencia entre dos zonas de memoria. Si antes de llegar CX a 0 se
+	produce la condición contraria a la del prefijo, se sale del ciclo; DI/SI apuntarán
+	al elemento siguiente al que provocó este efecto. Si se termina con CX=0 habrá que
+	mirar el flag correspondiente para comprobar si en la última comprobación la
+	condición se cumplió o no... pues en ambos casos el ciclo habrá terminado.</font></p>
+
+<font face="Arial" size="2">	</font><p><font face="Arial" size="2">Los 386+ incluyen además <b>STOSD,LODSD,MOVSD,SCASD,CMPSD.</b> La "D" es de Double
+	word, lo que significa que trabajan con palabras dobles, 32 bits. En lugar de AL/AX las
+	operaciones tienen lugar con EAX; como todas las anteriores, en modo real usarán CX y 
+	SI/DI, y en modo protegido ECX y ESI/EDI. Todas ellas permiten prefijos REP.</font></p>
+
+<p><font face="Arial" size="2">-<i><u>INSTRUCCIONES BCD</u></i></font></p>
+<font face="Arial" size="2">	<li><b>AAA</b> (ASCII Adjust AX After Addition) {A,C}</li>
+	</font><p align="justify"><font face="Arial" size="2">Convierte el número almacenado en AL a BCD desempaquetado. La idea
+	es aplicarlo después de sumar BCDs no empaquetados. Esta instrucción mira los 4 bits más
+	bajos de AL: si es mayor que 9 o AF (Flag Auxiliar) es igual a 1, suma 6 a AL, 1 a
+	AH, hace AF=CF=1, y los cuatro bits más significativos de AL los deja a 0. ¿Lo qué?</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Vamos con el ejemplillo de marras. Tenemos en AX el BCD no empaquetado
+	47 (0407h) y en BX 14 (0104h). Queremos sumarlos, y que el resultado siga siendo un BCD
+	no empaquetado, para obtener un resultado coherente. Partimos de que AF=0. Primero 
+	sumamos con <i>ADD AX,BX</i> porque no sabemos hacer otra cosa, y el resultado que nos
+	deja es AX=050Bh. Uf, ni por el forro. ¿Qué hacemos? Aaa... Eso, la instrucción AAA.
+	Como la parte baja de AL es mayor que 9, se da cuenta rápidamente de que ese número hay
+	que ajustarlo (cosa que ya sabíamos, pero en fin). Aplica la receta: suma 6 a AL, y 1
+	a AH. AX entonces queda 0611h. Carga con ceros la parte alta de AH, AX=0601h. Vaya, esto 
+	ya está mejor. Así que con esto podemos hacer minisumas en BCD. Con los flags, movs y un 
+	poco de imaginación se pueden hacer sumas en BCD más grandes. Mi consejo es que, una vez
+	entendido esto, te olvides de las instrucciones para BCD; el coprocesador matemático
+	incluye instrucciones de conversión mucho menos enrevesadas (coges dos números enormes, 
+	los sumas, y guardas el resultado gordo directamente como BCD)
+
+	</font></p><p align="justify"><font face="Arial" size="2">Lo de "ASCII" para este tipo de instrucciones con BCD no empaquetados
+	viene de que se puede obtener fácilmente el código ASCII de un número de éstos: sólo
+	hay que sumarle el código del cero (48) a cada dígito. Si estuviera empaquetado no
+	podríamos, porque lo que tenemos es un nibble para cada dígito, y no un byte (y el ascii
+	es un byte, claro, ya me dirás cómo le sumas 48 si no).</font></p>
+
+<font face="Arial" size="2">	<li><b>DAA</b> (Decimal Adjust AL after Addition) {S,Z,A,P,C}</li>
+	</font><p align="justify"><font face="Arial" size="2">Algo parecido a AAA, sólo que se usa tras la suma de dos bytes con
+	dígitos BCD empaquetados (dos números por tanto de dos dígitos). En vez de sumar 6
+	a AH suma 6 al nibble alto de AL, etc. Para sumar dos números de dos dígitos BCD
+	empaquetados, <i>ADD AL,loquesea</i> y luego <i>DAA</i>.</font></p>
+
+<font face="Arial" size="2">	<li><b>AAS</b> (Adjust AX After Subtraction) {A,C}</li>
+	</font><p align="justify"><font face="Arial" size="2">Como AAA pero para ajustar después de una resta, en vez de una suma.</font></p>
+
+<font face="Arial" size="2">	<li><b>DAS</b> (Decimal Adjust AL after Subtraction) {S,Z,A,P,C}</li>
+	</font><p align="justify"><font face="Arial" size="2">Análoga a DAA, pero para la resta.</font></p>
+
+<font face="Arial" size="2">	<li><b>AAM</b> (ASCII Adjust AX After Multiply) {S,Z,P}</li>
+	</font><p align="justify"><font face="Arial" size="2">De la misma calaña que AAA,AAS. Ajusta el resultado guardado en AX
+	de multiplicar dos dígitos BCD no empaquetados. Por ejemplo, si AL=07h y BL=08h, tras
+	<i>MUL BL</i> y <i>AAM</i> tendremos AX=0506h (porque 7·8=56). Apasionante.</font></p>
+
+<font face="Arial" size="2">	<li><b>AAD</b> (ASCII Adjust AX Before Division) {S,Z,P}</li>
+	</font><p align="justify"><font face="Arial" size="2">Más de lo mismo. Pero ojo, que ahora AAD se aplica antes de dividir,
+	y no después. Volviendo al ejemplo anterior, si con nuestros AX=0506h, BL=08h hacemos 
+	<i>AAD</i> y luego <i>DIV BL</i> obtenemos.. ajá, AL=07h y BL=08h, lo que confirma nuestra
+	teoría de que 7·8=56.</font></p>
+
+<p><font face="Arial" size="2">-<i><u>MISCELÁNEA</u></i></font></p>
+<font face="Arial" size="2">	<li><b>HLT</b> (HaLT, parada)</li>
+	</font><p align="justify"><font face="Arial" size="2">Detiene el microprocesador hasta la llegada de una interrupción o de una 
+	señal de reset. Se encuentra entre las instrucciones denominadas <i>privilegiadas</i>.</font></p>
+
+<font face="Arial" size="2">	<li><b>NOP</b> (No OPeration, no hacer nada)</li>
+	</font><p align="justify"><font face="Arial" size="2">No hace nada más que consumir los ciclos de reloj necesarios para cargar la 
+	instrucción y procesarla. Corresponde a la codificación de XCHG AX,AX</font></p>
+
+<font face="Arial" size="2">	<li align="justify"><b>INT</b> <i>inmediato</i></li>
+	</font><p align="justify"><font face="Arial" size="2">Salta al código de la interrupción indicada por el operando inmediato (0-255).
+	Aunque hay un capítulo que explica más en detalle las interrupciones, se puede decir que una 
+	instrucción de este tipo realiza una llamada lejana a una subrutina determinada por un cierto
+	número. En el caso de Linux, una interrupción 80h cede la ejecución al sistema
+	operativo, para que realice alguna operación indicada a través de los valores de
+	los registros (abrir un archivo, reservar memoria, etc). La diferencia fundamental
+	con las subrutinas es que al estar numeradas no es necesario conocer la posición
+	de memoria a la que se va a saltar. La característica "estrella" de estas llamadas cuando tienen
+	lugar en modo protegido es que se produce un <i>cambio de privilegio</i>; en el caso
+	citado, el sistema operativo contará con permisos para realizar determinadas
+	operaciones que el usuario no puede hacer directamente. Por ejemplo,
+	si queremos acceder al disco para borrar un archivo, no podemos. Lo que hacemos es
+	cederle el control al sistema diciéndole que borre ese archivo, pues sí que tiene 
+	permiso para ese tipo de acceso (al fin y al cabo es quien controla el cotarro), y 
+	comprobará si ese archivo nos pertenece, para borrarlo.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2"><b>INTO</b>, sin operandos, es mucho menos usada. Genera una 
+	interrupción 4 si el bit de overflow está a 1. En caso contrario continúa con la 
+	instrucción siguiente, como cualquier salto condicional.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Me dejo algunas instrucciones que no usaremos ya no digamos normalmente,
+	si no en el 99.999..% de los casos. <b>LOCK</b> bloquea el bus para reservarlo, allí
+	donde pueda haber otros aparatos (como otros procesadores, si el ordenador los tiene) que
+	puedan meterle mano. De este modo se garantiza el acceso; pone el cartel de "ocupado"
+	por una determinada línea del bus, y hace lo que tiene que hacer sin ser molestado.
+	Cada vez que queramos hacer algo de esto, colocaremos el prefijo "LOCK" delante de la
+	instrucción que queramos "blindar". Tan pronto se ejecuta la instrucción, el bloqueo
+	del bus se levanta (a menos que estemos todo el día dando la vara con el prefijo).</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Relacionado con los coprocesadores tenemos <b>ESC</b>, que pasa a esos
+	dispositivos operandos que puedan necesitar (para acceder a registros, por ejemplo).
+	Aquí no pienso hacer nada explícitamente con esta instrucción (ya veremos lo que
+	quiero decir con esto cuando lleguemos al coprocesador matemático), así que puedes olvidar 
+	este párrafo.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Para finalizar, la instrucción <b>WAIT</b>, que detiene el procesador
+	hasta que le llegue una cierta señal. Se utiliza para sincronizar las operaciones entre 
+	el procesador y el coprocesador matemático, y también comprobaremos que no hace falta
+	preocuparse de ella.</font></p>
+
+<font face="Arial" size="2">	</font><p align="right"><font face="Arial" size="2"><a href="#INICIO">Regresar al índice</a></font></p><p>
+
+</p></body></html>

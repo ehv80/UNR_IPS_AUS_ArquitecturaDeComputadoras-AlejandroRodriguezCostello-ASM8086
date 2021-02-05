@@ -1,0 +1,214 @@
+<html><head><title>CURSO DE ENSAMBLADOR: TIPOS DE EJECUTABLES</title></head>
+
+<body>
+
+<p align="center">
+<font face="Arial" size="3"><b>CAPÍTULO IV: Programas.</b> Ejecutables en MSDOS y Linux</font></p>
+
+	<font face="Arial" size="2">
+
+	</font><p align="justify"><font face="Arial" size="2">En este tema se dan algunas pistas de cómo se estructuran los fuentes para generar
+	ejecutables en entorno MSDOS y Linux; aunque es un poco temprano para programar nada,
+	y hay un apartado especial para las directivas (es fundamental conocer las facilidades que da el
+	ensamblador, y no sólo las instrucciones del procesador), creo que es bueno saber ensamblar
+	algo desde el principio para así poder ir probando todas las cosas que se vayan viendo 
+	de aquí en adelante.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2"><b>EJECUTABLES EN MSDOS</b></font></p>
+
+<font face="Arial" size="2">	<li>PROGRAMAS DE TIPO COM</li>
+	</font><p align="justify"><font face="Arial" size="2">Es el tipo básico de ejecutable en MSDOS. Toda la información del programa está
+	contenida en un mismo segmento, lo que supone que un programa de este tipo está
+	limitado a 64k de tamaño máximo.</font></p>
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Vamos con un sencillo ejemplo de fuente que genera un ejecutable de tipo COM:
+	<br><br>
+	<i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;org 100h</i><br>
+	<br>
+	<i>section .text</i><br>
+	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;;Aquí va el código<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;;Cuando se
+hace int 21h se llama al sistema operativo, que ejecuta la función que
+indique AH<br>
+	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;;AH=9 imprime la cadena apuntada por DS:DX, terminada en "$"<br>
+	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;;AH=4Ch termina el programa, con código de salida AL<br><br>
+	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;mov dx,cadena<br>
+	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;mov ah,9<br>
+	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int 21h<br><br>
+	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;mov ax,0x4C00<br>
+	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int 21h<br><br>
+	<i>section .data</i><br>
+	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;;Aqui los datos
+	inicializados<br>
+	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;;los caracteres 10 y 13 significan retorno de línea en MS-DOS.<br>
+	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;cadena DB "Qué pasa, mundo",13,10,"$"<br>
+	<br>
+	<i>section .bss</i><br>
+	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;;Y aqui los datos no 
+	inicializados, si los hubiera<br>
+	</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Aunque se definen diferentes secciones, las tres se encontrarán en el mismo segmento.
+	Cuando el programa sea ejecutado, el sistema operativo lo copiará en memoria en la
+	posición que determine conveniente, y en el momento en que se le transfiera el control
+	CS,DS,ES y SS apuntarán a dicho segmento (el resto de registros de segmento no se tocan
+	porque puede ser que el procesador no los tenga, no olvidemos que es un sistema de 16
+	bits). El programa se encontrará a partir del offset 100h, pues los primeros 256 bytes 
+	los usa el sistema operativo para almacenar información del programa relativa a su 
+	ejecución, en lo que se conoce como PSP (Program Segment Prefix). Por ello es necesario 
+	incluir la directiva "org 100h" en la cabecera para indicar al ensamblador que calcule 
+	las direcciones relativas a ese desplazamiento.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Aunque el PSP en general puede resultar de cierta utilidad para el 
+	programador, no se pretende entrar a discutir la programación bajo MSDOS (se muestra para
+	aprendizaje de programación en modo real); sin embargo puede ser interesante saber que 
+	en el	offset 80h se encuentra la cadena que se introdujo en el intérprete de comandos
+	para ejecutar el programa. El primer byte indica la longitud de la cadena,
+	y a continuación los caracteres que la componen. Tras la cadena aparece un byte
+	con el código 13d, que no cuenta a la hora de contabilizar la longitud en el primer
+	byte.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Las diferentes secciones del fuente no son realmente importantes, pues 
+	en un ejecutable de tipo COM no se distingue código de datos en tanto que simplemente 
+	comienza a ejecutar desde la posición CS:100h lo que encuentre a su paso. Lo que sucede 
+	es que el ensamblador colocará siempre el contenido de la sección <i>.text</i> en primer 
+	lugar, <i>.data</i> a continuación y por último <i>.bss</i>. De este modo podemos hacer
+	más legible el código declarando la zona de datos en primer lugar. No hace falta definir 
+	la pila pues el sistema coloca SP al final del segmento, en la dirección 0FFFEh. Significa 
+	esto que el ejecutable tendrá que ocupar realmente menos de 64k, pues a medida que vayamos 
+	metiendo cosas en la pila, iremos comiendo terreno al propio programa.</font></p>
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">La diferencia entre datos inicializados y no inicializados es muy simple. Los no
+	inicializados no forman parte del programa; si reservamos espacio para un array de
+	1000 bytes en .bss el programa no ocupará 1000 bytes más. El ensamblador se limitará
+	a utilizar los nombres de los datos que se definan como si hubiera algo ahí, pero
+	cuando se cargue el programa esa zona de memoria quedará como estaba. Es por eso
+	que primero se colocan en memoria los datos inicializados y luego los no 
+	inicializados. Estrictamente hablando, estos últimos no existen.</font></p>
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Un programa como éste se dice que es binario puro, pues absolutamente todo el código
+	representa instrucciones o datos del programa. No es necesario enlazador, pues todo
+	el programa va "de una pieza"; el ensamblador se limita a traducir los códigos de
+	operación/directivas/datos/etiquetas que va encontrando a su paso, generando
+	directamente el ejecutable.</font></p>
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Para ensamblar este programa, suponiendo que <i>hola.asm</i> sea el
+	código fuente y <i>hola.com</i> la salida deseada, tendremos que escribir lo siguiente:</font></p>
+<font face="Arial" size="2">	</font><p align="center"><font face="Arial" size="2"><i>nasm -f bin hola.asm -o hola.com</i></font></p><p>
+<font face="Arial" size="2">	</font></p><p align="justify"><font face="Arial" size="2">La opción -f indica el tipo de salida, en este caso binaria.</font></p>
+
+<font face="Arial" size="2">	<li>PROGRAMAS DE TIPO EXE</li>
+	</font><p align="justify"><font face="Arial" size="2">Era evidente que con ejecutables de 64k no íbamos a ninguna parte. El formato más
+	común en MSDOS es EXE, pues permite generar código desparramado por diferentes
+	segmentos, aprovechando así (de una manera un tanto picassiana) el espacio de memoria
+	disponible. Hay referencias entre segmentos no resueltas en el momento de enlazado,
+	por lo que el sistema operativo en el momento de cargarlo en memoria ha de realizar
+	algunos ajustes en el código en función de los datos que encuentre en la cabecera.
+	Como la estructura es más compleja (mejor dicho, como existe una estructura) el
+	ensamblador ha de generar unos archivos objeto que le serán pasados al enlazador
+	para finalmente formar el ejecutable. Por otra parte NASM proporciona un conjunto
+	de macros para crear un fuente que, cuando es ensamblado tal cual, resulta un
+	archivo EXE. Yo prefiero la primera opción, porque cuando quieres compilar 
+	distintos módulos no hay más remedio que enlazarlo. En la documentación de NASM figura 
+	el método alternativo.</font></p>
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Veamos un ejemplo de fuente para generar un EXE:</font></p>
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2"><i>segment</i> codigo<br>
+	<i>..start:</i><br>
+	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;;Aqui va el codigo<br><br>
+	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;mov ax,datos<br>
+	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;mov ds,ax<br><br>
+	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;mov dx,cadena<br>
+	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;mov ah,9<br>
+	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int 21h<br><br>
+	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;mov ax,0x4C00<br>
+	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int 21h<br>
+	<br>
+	<i>segment</i> datos<br>
+	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;;Aqui los datos
+	inicializados<br><br>
+	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;cadena DB "Hey, mundo",13,10,"$"<br>
+	<br>
+	<i>section</i> pila <i>stack</i><br>
+	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;;Una pila de 256 bytes<br><br>
+	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;resb 256<br>
+	</font></p>
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Cuando se ejecuta un programa EXE, CS apunta al segmento de código de inicio,
+	SS al segmento de pila (con SP al final del mismo), y DS/ES al PSP, que ahora no estará 
+	necesariamente ubicado antes del programa.</font></p>
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">En este caso para obtener el archivo objeto el comando será</font></p>
+<font face="Arial" size="2">	</font><p align="center"><font face="Arial" size="2"><i>nasm -f obj hola.asm -o hola.obj</i></font></p>
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Ahora podremos generar el ejecutable con cualquier linker; por ejemplo,
+	con tlink sería</font></p>
+<font face="Arial" size="2">	</font><p align="center"><font face="Arial" size="2"><i>tlink hola.obj</i></font></p>
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">consiguiendo así un <i>hola.exe</i></font></p>
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Como DS apunta inicialmente al PSP, nada más empezar lo cargamos con
+	el valor del segmento de datos.  El ensamblador interpreta la palabra 
+	"datos" como el segmento <i>datos</i>, referencia que en el caso de los archivos
+	EXE (y casi todos los demás) no se resuelve hasta el momento de cargar el programa
+	en memoria, en el que el sistema operativo coloca los segmentos que lo componen. No
+	es así en el caso de los offsets (<i>mov dx, cadena</i>; el ensamblador entiende que 
+	se hace referencia al offset de la etiqueta "cadena" dentro del segmento donde 
+	se encuentre), que son perfectamente conocidos en tiempo de ensamblado.</font></p>
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">La directiva <i>..start:</i> indica al enlazador el punto de inicio
+	del programa. <i>stack</i> señala al enlazador, de manera similar, cuál es el segmento 
+	de pila; al arrancar el programa, SS apuntará al segmento designado, y SP al final de 
+	éste.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2"><b>EJECUTABLES EN LINUX</b></font></p>
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">En realidad casi todos los sistemas que funcionan en modo protegido tienen
+	básicamente el mismo tipo de ejecutables; todo programa se estructura en tres segmentos,
+	para pila, código y datos. Los segmentos están limitados a un máximo de 4Gb,
+	lo cual no es una condición en absoluto restrictiva. Con un segmento para cada cosa vamos	
+	servidos.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Del mismo modo que en MSDOS, y como es lógico, en el momento de ejecutar un 
+	programa éste es ubicado en una posición de memoria cualquiera, tomando los registros de
+	segmento los valores que el sistema operativo determine convenientes. La peculiaridad
+	estriba en que si quisiéramos modificar nosotros mismos los registros de segmento, sólo podrían 
+	apuntar a los segmentos	de nuestro propio programa (impidiéndonos el sistema operativo hacerlo
+	de otro modo), con lo que a efectos prácticos podremos olvidarnos de los segmentos a la hora de 
+	programar y limitarnos a manejar los registros de offset, de 32 bits (dónde están los segmentos 
+	o qué significan los registros de segmento es algo que, de momento, no nos atañe). Además, como 
+	sólo hay un segmento de datos, y el de código no se puede modificar (por cuestiones de seguridad), en general 
+	serán innecesarios los prefijos de segmento en los direccionamientos. Esto simplifica mucho las
+	cosas al programador, pues desde su programa ve <i>su</i> memoria, que recorre con registros
+	de 32 bits.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Un fuente de este tipo se construye de manera similar a los COM (sólo que las
+	secciones de datos y código corresponden a segmentos distintos, y la pila la determina el
+	sistema operativo), aunque, obviamente, habremos de emplear un enlazador distinto. Como en Linux 
+	las llamadas al sistema son completamente distintas (la diferencia más evidente es que se acude a 
+	la INT 80h en lugar de la 21h), incluyo a continuación la versión del ejemplo debidamente modificado:</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2"><i>section</i> .text<br>
+	<i>global _start</i><br>
+	<i>_start:<br>
+	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;;Aqui va el codigo<br><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;;escribe
+(EAX=4) en la salida estándar (EBX=1) la cadena apuntada por ECX de
+longitud EDX.<br>
+	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;mov edx,longitud<br>
+	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;mov ecx,cadena<br>
+	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;mov ebx,1<br>
+	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;mov eax,4<br>
+	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int 80h<br><br>
+	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;;terminar la ejecución (EAX=1)<br>
+	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;mov eax,1<br>
+	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int 80h<br>
+	<br>
+	<i>section</i> .data<br>
+	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;;Aqui los datos
+	inicializados<br><br>
+	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;cadena DB "Qué pasa, mundo",10,"$"<br>
+	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;longitud equ $-cadena</i></font></p>
+
+<font face="Arial" size="2"><i>	</i></font><p><font face="Arial" size="2"><i>Para ensamblarlo como ejecutable para linux (generando el archivo objeto.o) y enlazar el resultado
+	para crear el archivo <i>ejecutable</i>, nada más que</i></font></p>
+<font face="Arial" size="2"><i>	</i></font><p align="center"><font face="Arial" size="2"><i><i>nasm -f elf archivo.asm -o objeto.o</i></i></font></p>
+<font face="Arial" size="2"><i>	</i></font><p align="center"><font face="Arial" size="2"><i><i>ld -s -o ejecutable objeto.o</i></i></font></p>
+
+<font face="Arial" size="2"><i>	</i></font><p><font face="Arial" size="2"><i>Con ./ejecutable veremos el mensaje "Qué pasa, mundo" en pantalla. En este caso la manera de definir
+	el punto de entrada del programa para el enlazador es emplear la directiva <i>global _start</i>, pues
+	es la etiqueta que <i>ld</i> espera. Con esto lo que hacemos es permitir que la etiqueta _start sea
+	visible desde el exterior.</i></font></p>
+
+<font face="Arial" size="2"><i>	</i></font><p align="right"><font face="Arial" size="2"><i><a href="http://www.rinconsolidario.org/eps/asm8086/asm.html">Regresar al índice</a>
+</i></font>
+
+</p></body></html>

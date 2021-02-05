@@ -1,0 +1,135 @@
+<html><head><title>CURSO DE ENSAMBLADOR: INTRODUCCIÓN</title></head>
+
+<body>
+
+<p align="center"><font face="Arial" size="3"><b>INTRODUCCIÓN</b></font></p>
+	<font face="Arial" size="2">
+
+	</font><p align="justify"><font face="Arial" size="2">Este documento de tan optimista título pretende ser una breve introducción al 
+	ensamblador; la idea es simplemente coger un poco de práctica con el juego de 
+	instrucciones de la familia 80x86, direccionamiento, etc.. sin entrar demasiado 
+	en la estructura de los ejecutables, modelos de memoria...</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">¿Por qué otro manual de ensamblador? En un principio estaba dirigido
+	a quien ya supiera ensamblador de motorola 68000 (extendido en algunas universidades),
+	siendo una especie de mini-guía para que los interesados (pocos, dicho sea), sabiendo 
+	68000, pudieran saltarse a los Intel sin mucho esfuerzo. Lo que empezó con un par de 
+	apuntes sobre registros, segmentación y equivalencias entre instrucciones de uno y otro 
+	procesador acabó por desmadrarse hasta formar un modesto manual de cerca de una docena 
+	de apartados.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Perdida la motivación inicial, ha pasado a ser un manual más,
+	ciertamente, pero sigo dedicándole tiempo por varios motivos. Para empezar, son pocos
+	los textos que tocan todos los temas, y la inmensa mayoría tratan exclusivamente de
+	MSDOS. Ya hay algunos, afortunadamente, que incluyen programación para Linux 
+	(y bastante buenos para mi gusto), pero los mejores suelen estar en inglés y ser
+	demasiado técnicos, además de no ser habitual que hablen de instrucciones MMX, SSE
+	o incluso las del coprocesador matemático (cosa que no comprendo, porque es donde se
+	le saca juguillo). El objetivo principal que me he impuesto 
+	es la legibilidad, para que el que se encuentre con esto entienda rápidamente los aspectos 
+	que se tratan, y luego vaya a otro sitio sabiendo qué información buscar, y qué hacer con 
+	ella. Tampoco intento ser exhaustivo con esto; rondan por la red manuales tipo "Art of Assembly" 
+	que tratan intensamente temas como las estructuras de datos o la optimización, que no osaría emular. 
+	Procuro que sea esto lo más ameno posible, y nadar en detalles desde el primer momento no ayuda demasiado.
+	Para eso ya está la sección de enlaces que incluyo.</font></p>
+<font face="Arial" size="2">	
+	</font><p align="justify"><font face="Arial" size="2">Tal y como he dejado el manual, creo que se puede comprender en su totalidad 
+	sin ningún conocimiento previo, salvo algunas nociones básicas de programación. Si nunca antes has
+	programado, te recomiendo que recurras a otras fuentes.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">¿Qué vamos a hacer aquí? Aprenderemos los rudimentos de programación en MS-DOS, 
+	a fin de entendernos con el modo real, (16 bits, o sea, segmentos de 64k y gracias), 
+	y bajo Linux (como ejemplo de programación en 32 bits); también se aprenderá a usar el 
+	coprocesador matemático, porque hacer operaciones en coma flotante a pelo es menos 
+	saludable que fumar papel de amianto. Se añadirán instrucciones MMX, SSE (espero), SSE2,
+	y si alguien dona algún AMD modernito a la Fundación Ernesto Pérez, 3DNow y familia.
+	A lo largo de las explicaciones se irán comentando las diferencias entre los dos modos de 
+	funcionamiento para, ya hacia el final, introducir la interacción entre programas en C y 
+	ensamblador en Linux y, más concretamente, cómo hacer código en ensamblador lo más portable 
+	posible para las implementaciones x86 de sistemas Unix. El resto de capítulos explicarán
+	algunos aspectos que quedan oscuros como la segmentación en modo protegido, el proceso
+	de arranque del ordenador, la entrada/salida...</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Intentaré contar más medias verdades que mentiras cuando se complique demasiado 
+	el asunto, a fin de no hacer esto demasiado pesado (y así de paso me cubro un poco las 
+	espaldas cuando no tenga ni idea del tema, que también pasa) Doy por supuesto que 
+	sabes sumar numeros binarios, en hexadecimal, qué es el complemento a 2, etc etc. Si no tienes
+	ni idea de lo que te estoy hablando, échale un ojo al capítulo 0.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">La notación que usaré será una "b" al final de un número para binario, una "h" para 
+	hexadecimal, y nada para decimal, que es lo que usa este ensamblador. Existen como notación alternativa
+	igualmente admitida por NASM cosas del tipo 0x21 en vez de 21h, que es lo que se hace en C. Yo usaré
+	la que llevo usando toda la vida, que para qué cambiar pudiendo no hacerlo. Por cierto, los números hexadecimales 
+	que comienzan por una letra requieren un 0 delante, a fin de no confundirlos el ensamblador con etiquetas o 
+	instrucciones. Si se me escapa por ahí algún 0 sin venir a cuento, es la fuerza de la costumbre. Y 
+	aunque estrictamente por una "palabra" se entiende el ancho típico del dato del 
+	micro (por lo que en un 386 serían 32 bits) me referiré a palabra por 2 bytes, o 16 bits;
+	doble palabra o dword 32; palabra cuádruple o qword 64. Esta terminología está bastante extendida, y la razón de 
+	ser de esto (según creo) es que la "palabra-palabra" era inicialmente de 16 bits (8086). Cuando llegó el
+	386 con sus 32 bits, realmente todo el software seguía siendo de 16 bits, salvando los "extras" que proporcionaba 
+	el micro; así pues, lo del 386 eran más bien palabras dobles. Y así ha sido hasta ahora.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">¿Qué te hace falta?
+	</font></p><ol>
+<font face="Arial" size="2">          	<li align="justify">Un ordenador (si estás leyendo esto no creo que sea un problema) compatible 
+		con la familia 80x86 (¿alguien usa mac?)</li>
+		<li>En principio MS-DOS o Windows 95,98,Me.. para ejecutar los programas en
+		modo real (o algún tipo de emulador de MSDOS si usas otro sistema). 
+		Mientras te ejecute programas DOS, perfecto. Lógicamente, para los ejemplos
+		de Linux, necesitarás Linux (aunque si alguien un poco avispado se salta hasta -cuando
+		lo suba- el capítulo referido a C, verá que se puede hacer más o menos lo mismo
+		para sistemas *BSD).</li>
+		<li align="justify">Un ensamblador. Aquí usaré NASM para los ejemplos (que en
+		el momento de escribir estas líneas va por la versión 0.98.36), aunque realmente 
+		apenas habrá de eso, pues esto es más bien una guía descriptiva. Las instrucciones 
+		serán las mismas en todo caso, pero si empleas otro ensamblador habrá, lógicamente,
+		diferencias en la sintaxis. NASM, MASM (Microsoft) y TASM (Borland) usan la
+		llamada sintaxis Intel (pues es la que usa Intel en su documentación), mientras 
+		que otros como GAS (GNU-ASM) emplean la AT&amp;T. Además, dentro de cada tipo,
+		existen numerosas diferencias en las directivas de un ensamblador a otro. Toca
+		en ese caso leerse el manual del programa en cuestión. Algunos temas
+		son más conceptuales que otra cosa (de hecho cuando hable de cosas que vengan
+		en hojitas de referencia, lo más probable es que me salte el rollo y te remita
+		a ellas), por lo que si te interesan, te serán de utilidad sea cual sea tu
+		ensamblador. Sin embargo, en términos generales, este mini-manual está hecho
+		para usar NASM.</li>
+<br><br>
+		Por si alguien está pensando en para qué leches introducir la programación en 
+		MSDOS en estos tiempos tan modernos, debería saber que el modo real aún tiene 
+		relevancia pues el ordenador cuando arranca lo hace en este modo de funcionamiento.
+		Ayuda además a entender las peculiaridades de los PCs, siendo la compatibilidad
+		con esta característica un fuerte condicionante en la arquitectura de la familia.
+		El planteamiento paralelo 16-32 bits quizá sea un poco confuso (me estoy pensando
+		limitarme a los 32 bits, y dejar el modo real para el final, por si alguno quiere
+		enredar con él), pero creo que es útil pues aún hay gente aprendiendo ensamblador
+		en MSDOS (entre otras cosas porque puedes manipular todo el hardware sin restricciones,
+		lo que resulta ideal para "jugar con el ordenador"). Agradecería mucho que la gente
+		que pasara por aquí opinara sobre el tema.
+	</font></ol>
+<font face="Arial" size="2">	</font><p></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">A propósito de lo cual tengo que añadir algunas puntualizaciones. Me 
+	llegan de vez en cuando algunos emails (muy de vez en cuando) comentando cosas sobre la
+	página, lo que me parece perfecto. Lo que ya no me lo parece tanto es que gente con no sé
+	si ingenuidad o jeta tipo hormigón escriba pidiendo que les resuelva la vida. Comprendo que
+	alguien pueda enviar una duda, pero me desconcierta que haya quien solicita que le hagan un
+	programa para nosequé práctica de clase. Estos últimos que, por favor, ni se molesten.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Sobre los de las dudas existenciales esporádicas, sugiero otra estrategia.
+	Puse una dirección de correo ahí en la portada para que quien tuviera alguna duda o
+	comentario <i>sobre la web</i>, la expusiera. Es decir, me sirve alguien que me diga "oye,
+	he leido tal y cual y no se entiende bien". O "mira, es que este tema me parece muy interesante
+	y no dices nada al respecto". Y entonces voy yo, me lo pienso, y me busco un ratillo para
+	añadir o corregir lo que haga falta. Lo que difícilmente haré será contestar directamente a las 
+	dudas (salvo que sean muy breves y educadas, y no estén claramente explicadas en la página o en
+	los enlaces). Y no es que me lo tome a malas, sino que cuando uno responde persona por persona
+	siente que pierde el tiempo si se puede subir la respuesta a la web, y más aún si ya está subida.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2"> Por cierto, tampoco soy ningún gurú del ensamblador, sólo un aficionado que no 
+	dedica mucho tiempo a ver la tele. Dicho queda.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">¿Listo todo? Abróchense los cinturones, damas y caballeros, que despegamos.</font></p>
+<font face="Arial" size="2">	</font><p align="right"><font face="Arial" size="2"><a href="http://www.rinconsolidario.org/eps/asm8086/asm.html">Regresar al índice</a></font></p><p align="justify">
+<font face="Arial" size="2">	</font>
+
+</p></body></html>

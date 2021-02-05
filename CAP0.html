@@ -1,0 +1,810 @@
+<html><head><title>CURSO DE ENSAMBLADOR: LA FAMILIA 80x86</title></head>
+
+<body>
+
+<p align="center">
+<font face="Arial" size="3"><b>PROLEGÓMENOS: PARA LOS QUE NO HAYAN VISTO ENSAMBLADOR EN SU VIDA</b></font></p>
+	<font face="Arial" size="2">
+
+	</font><p align="justify"><font face="Arial" size="2">En este capítulo introductorio veremos algunos conceptos básicos sobre el funcionamiento de un 
+	microprocesador. Muchos de ellos serán ya conocidos, pero es imprescindible tenerlos todos bien claros antes de 
+	empezar a programar en ensamblador. Por otra parte, este capítulo puede ser de utilidad a cualquier principiante, 
+	sea cual sea el microprocesador que vaya a manejar, pues son ideas generales que luego, llegado el caso, 
+	particularizaremos para los 80x86. Por mi (escasa) experiencia con gente que empieza con el ensamblador,
+	puedo decir que muchos errores vienen derivados de no comprender completamente algunas de las ideas que
+	intento presentar en este capítulo.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Es bastante recomendable tener algún conocimiento previo de progración en cualquier otro lenguaje,
+	llámese C, pascal, ADA, basic o lo que sea. Hay gente que opina lo contrario, pero a mí me
+	parece mucho más didáctico y fácil aprender primero un lenguaje de alto nivel antes que ensamblador..</font></p>
+
+<font face="Arial" size="2">	</font><blockquote>
+<font face="Arial" size="2">	<li><a href="#SISNUM">Sistemas de numeración</a></li>
+	<li><a href="#OPLOG">Operaciones lógicas</a></li>
+	<li><a href="#REPINF">Representación de la información en un ordenador</a></li>
+	</font><blockquote><font face="Arial" size="2">	-<a href="#ARITENT">Aritmética de enteros</a><br>
+				-<a href="#NUMREAL">Números reales</a><br>
+				-<a href="#BCD">Codificación BCD</a><br>
+				-<a href="#TXTSIMG">Texto, sonido, imágenes</a>
+	</font></blockquote>
+<font face="Arial" size="2">	<li><a href="#MEM">Memorias</a></li>
+	<li><a href="#PYE">Procesadores, Ensambladores</a></li>
+	</font></blockquote>
+<font face="Arial" size="2">		
+
+	</font><p></p><li><font face="Arial" size="2"><a name="SISNUM"><b>Sistemas de numeración</b></a></font></li><p></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Como ya sabrá la mayoría, un bit es un dígito binario (abreviatura de <b>BI</b>nary digi<b>T</b>), 
+	esto es, un número que puede ser 0 o 1. Los bits se pueden agrupar para formar números mayores; con N bits se pueden 
+	formar hasta 2^N números distintos (<b>^</b> por "elevado a"). Por ejemplo, con cuatro bits 2^4=16 combinaciones:</font></p>
+
+<font face="Arial" size="2">	</font><p align="center"><font face="Arial" size="2">0000 0001 0010 0011 0100 0101 0110 0111 1000 1001 1010 1011 1100 1101 1110 1111</font></p>
+<font face="Arial" size="2">	
+	</font><p align="justify"><font face="Arial" size="2">Los bits constituyen la base numérica de la electrónica digital, que básicamente está fundamentada 
+	en interruptores electrónicos que abren o cierran el paso de corriente (podríamos decir que abierto es un 0 y 
+	cerrado es un 1, o viceversa) de acuerdo con ciertas reglas. En un sistema complejo como un ordenador se combinan 
+	elementos sencillos para crear estructuras con gran potencia de cálculo, pero todas las operaciones se realizan con 
+	ceros y unos, codificadas como tensiones. Así, podríamos tener un circuito digital en el que un punto a 5 voltios 
+	significaría un '1', y uno a 0 voltios, un '0'.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Un grupo de 8 bits se denomina <i>byte</i>. 1024 bytes forman un <i>kilobyte</i> (kbyte, kb, o 
+	simplemente k), 1024 kilobytes un <i>megabyte</i>, 1024 megabytes un <i>gigabyte</i>. Existen más submúltiplos como 
+	terabyte o petabyte, pero son de menor uso.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">El hermano menor del byte es el <i>nibble</i>, que no es más que una agrupación de
+	4 bits. El nombre viene de un bobo juego de palabras en el que <i>byte</i>, octeto, se pronuncia igual que
+	<i>bite</i>, mordisco, que es lo que significa <i>nibble</i>.
+
+	</font></p><p align="justify"><font face="Arial" size="2">Sabemos que los bits existen pero.. ¿cómo representar información con ellos? ¿cómo contar o sumar 
+	dos números?</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Veamos primero cómo manejamos nuestra cotidiana numeración decimal, pues con ella repararemos en 
+	detalles que normalmente obviamos, y que son generalizables a cualquier sistema de numeración.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Consideremos los números positivos. Para contar usamos los símbolos del 0 al 9 de la siguiente 
+	manera: 0,1,2,3,4,5,6,7,8,9.. y 10, 11, 12 etc. Acabados los diez símbolos o guarismos, volvemos a empezar desde
+	el principio, incrementando en uno la cifra superior. Al 9 le sigue el 10, y así sucesivamente.
+	Cada cifra dentro de un número tiene un <i>peso</i>, pues su valor depende de la posición que ocupe. En '467' el 
+	'7' vale 7, mientras que en '7891' vale 7000.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Así dividimos los números en unidades, decenas, centenas.. según el guarismo se encuentre en la 
+	primera, la segunda, la tercera posición (contando desde la derecha). Las unidades tienen peso '1', pues el '7' 
+	en '417' vale 7*1=7. Las unidades de millar tienen peso '1000', pues '7' en '7891' vale 7*1000=7000. Si numeramos 
+	las cifras de derecha a izquierda, comenzando a contar con el cero, veremos que la posición N tiene peso 10^N.
+	Esto es así porque la base de numeración es el 10. El número 7891 lo podemos escribir 
+	como</font></p>
+<font face="Arial" size="2">	
+	</font><blockquote><font face="Arial" size="2">7891 = 7*1000 + 8*100 + 9*10 + 1*1 = 7*10^3 + 8*10^2 + 9*10^1 + 1*10^0</font></blockquote>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Puede parecer una tontería tanto viaje, pero cuando trabajemos con otros sistemas de numeración 
+	vendrá bien tener esto en mente. Vamos con los números binarios. Ahora tenemos sólo dos símbolos distintos, 0 y 1, 
+	por lo que la base es el 2. El peso de una cifra binaria es 2^N</font></p>
+
+<font face="Arial" size="2">	</font><blockquote><font face="Arial" size="2">11101 = 1*10000 + 1*1000 + 1*100 + 0*10 + 1*1 = 1*10^4 + 1*10^3 + 1*10^2 + 0*10^1 + 1*10^0</font></blockquote>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">¿Por qué seguimos usando potencias de 10 y no de 2? Porque ahora estamos usando notación binaria, y 
+	del mismo modo	que en decimal al 9 le sigue al 10, en binario al 1 le sigue el 10. De aquí en adelante allí donde 
+	haya pie a confusión colocaré una 'd' para indicar decimal, 'b' para binario, 'o' para octal y 'h' para hexadecimal.
+	O sea, que 2d = 10b</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Uno ve un número tan feo como 11101b y así, a botepronto, puede no tener ni idea de a qué número 
+	nos referimos. Si expresamos lo anterior en notación decimal y echamos las cuentecillas vemos que</font></p>
+
+<font face="Arial" size="2">	</font><blockquote><font face="Arial" size="2">11101b = 1*2^4 + 1*2^3 + 1*2^2 + 0*2^1 + 1*2^0 = 16 + 8 + 4 + 1 = 29</font></blockquote>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Con la práctica se cogerá un poco soltura con estas cosas (y tampoco hace falta, en la mayoría de 
+	los casos, tener que manejarse mucho con esto), aunque no está de más tener una calculadora para estos menesteres.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Para convertir nuestro 29 decimal a binario, se puede hacer o bien a ojo (cosa que puede hacer 
+	bizquear a más	de uno), calculadora en ristre o, si no queda más remedio, a mano. Un modo sencillo de hacerlo a mano 
+	consiste en dividir sucesivamente por la base, y extraer los restos. Por ejemplo, si quisiéramos hacer algo tan (ejem)
+	útil como obtener los dígitos decimales de 29d, vamos dividiendo entre 10:</font></p>
+
+<font face="Arial" size="2">	</font><blockquote><font face="Arial" size="2">29 / 10 = 2, y de resto 9<br>
+			2 / 10 = 0, y de resto 2</font></blockquote>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Cuando llegamos a una división que da 0 es que hemos terminado, así que recogemos los restos en orden 
+	inverso: 2, 9. Si hacemos lo mismo con base 2, para convertir a binario:</font></p>
+
+<font face="Arial" size="2">	</font><blockquote><font face="Arial" size="2">29 / 2 = 14, resto 1<br>
+		14 / 2 = 7, resto 0<br>
+		7 / 2 = 3, resto 1<br>
+		3 / 2 = 1, resto 1<br>
+		1 / 2 = 0, resto 1, y terminamos<br><br>
+		1,1,1,0,1 =&gt; 11101</font></blockquote>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Los números binarios son imprescindibles, pero un poco engorrosos de manipular por humanos, porque 
+	cuando tenemos un número de más de 6 o 7 cifras ya nos empieza a bailar el asunto. Para ello se pusieron en práctica 
+	los sistemas octal y hexadecimal (que más o menos han existido desde que el mundo es mundo, pero se pusieron de moda
+	con eso de la informática).</font></p>
+
+<font face="Arial" size="2">	</font><blockquote><table border="0" cellpadding="3">
+        <tbody>
+        <tr>
+		<th><font face="Arial" size="2">Octal </font></th>
+          	<td><font face="Arial" size="2">Base 8</font></td>
+            	<td><font face="Arial" size="2">0,1,2,3,4,5,6,7</font></td>
+        	    	</tr>
+        <tr>
+            	<th><font face="Arial" size="2">Hexadecimal</font></th>
+            	<td><font face="Arial" size="2">Base 16</font></td>
+            	<td><font face="Arial" size="2">0,1,2,3,4,5,6,7,8,9,A,B,C,D,E,F</font></td>
+		</tr>
+     </tbody></table></blockquote>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">El octal es muy simple porque todo funciona como hemos dicho, sólo que en vez de 0 y 1, contamos 
+	hasta el 7. Con el hexadecimal estamos en las mismas, con la salvedad de que como no existen 16 guarismos, nos 
+	tenemos que "inventar" los 6 últimos con las letras A,B,C,D,E y F (que valen 10,11,12,13,14 y 15 respectivamente)</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">La gracia del octal y el hexadecimal reside en que hay una equivalencia directa entre estos sistemas 
+	y el binario.</font></p>
+
+<font face="Arial" size="2">	</font><blockquote>
+<font face="Arial" size="2">	<table border="3" cellpadding="5">
+        <tbody>
+        <tr>
+			<td colspan="2"><font face="Arial" size="2"><b>Octal:</b></font></td>
+            	<td colspan="4"><font face="Arial" size="2"><b>Hexadecimal:</b></font></td>
+	    	</tr>
+        <tr>
+            	<td><font face="Arial" size="2"><b>0</b></font></td>
+            	<td><font face="Arial" size="2">000</font></td>
+			<td><font face="Arial" size="2"><b>0</b></font></td>
+            	<td><font face="Arial" size="2">0000</font></td>
+			<td><font face="Arial" size="2"><b>8</b></font></td>
+            	<td><font face="Arial" size="2">1000</font></td>
+		</tr>
+		<tr>
+            	<td><font face="Arial" size="2"><b>1</b></font></td>
+            	<td><font face="Arial" size="2">001</font></td>
+			<td><font face="Arial" size="2"><b>1</b></font></td>
+            	<td><font face="Arial" size="2">0001</font></td>
+			<td><font face="Arial" size="2"><b>9</b></font></td>
+            	<td><font face="Arial" size="2">1001</font></td>
+		</tr>
+		<tr>
+            	<td><font face="Arial" size="2"><b>2</b></font></td>
+            	<td><font face="Arial" size="2">010</font></td>
+			<td><font face="Arial" size="2"><b>2</b></font></td>
+            	<td><font face="Arial" size="2">0010</font></td>
+			<td><font face="Arial" size="2"><b>A</b></font></td>
+            	<td><font face="Arial" size="2">1010</font></td>
+		</tr>
+		<tr>
+            	<td><font face="Arial" size="2"><b>3</b></font></td>
+            	<td><font face="Arial" size="2">011</font></td>
+			<td><font face="Arial" size="2"><b>3</b></font></td>
+            	<td><font face="Arial" size="2">0011</font></td>
+			<td><font face="Arial" size="2"><b>B</b></font></td>
+            	<td><font face="Arial" size="2">1011</font></td>
+		</tr>
+		<tr>
+            	<td><font face="Arial" size="2"><b>4</b></font></td>
+            	<td><font face="Arial" size="2">100</font></td>
+			<td><font face="Arial" size="2"><b>4</b></font></td>
+            	<td><font face="Arial" size="2">0100</font></td>
+			<td><font face="Arial" size="2"><b>C</b></font></td>
+            	<td><font face="Arial" size="2">1100</font></td>
+		</tr>
+		<tr>
+            	<td><font face="Arial" size="2"><b>5</b></font></td>
+            	<td><font face="Arial" size="2">101</font></td>
+			<td><font face="Arial" size="2"><b>5</b></font></td>
+            	<td><font face="Arial" size="2">0101</font></td>
+			<td><font face="Arial" size="2"><b>D</b></font></td>
+            	<td><font face="Arial" size="2">1101</font></td>
+		</tr>
+		<tr>
+            	<td><font face="Arial" size="2"><b>6</b></font></td>
+            	<td><font face="Arial" size="2">110</font></td>
+			<td><font face="Arial" size="2"><b>6</b></font></td>
+            	<td><font face="Arial" size="2">0110</font></td>
+			<td><font face="Arial" size="2"><b>E</b></font></td>
+            	<td><font face="Arial" size="2">1110</font></td>
+		</tr>
+		<tr>
+            	<td><font face="Arial" size="2"><b>7</b></font></td>
+            	<td><font face="Arial" size="2">111</font></td>
+			<td><font face="Arial" size="2"><b>7</b></font></td>
+            	<td><font face="Arial" size="2">0111</font></td>
+			<td><font face="Arial" size="2"><b>F</b></font></td>
+            	<td><font face="Arial" size="2">1111</font></td>
+		</tr>
+        </tbody></table>
+	   </font></blockquote>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Para formar un número en octal no tenemos más que agrupar las cifras binarias de 3 en 3 y sistituir; 
+	lo mismo en hexadecimal, pero de 4 en 4, y sustituir equivalencias. Por ejemplo, 145o se puede separar en 1 4 5, 
+	001 100 101, formando el número binario 001100101 (los ceros a la izquierda podríamos quitarlos porque no tienen 
+	ningún valor, pero luego veremos que a veces es útil dejarlos puestos). Podemos ver	entonces los sistemas octal y 
+	hexadecimal como abreviaturas de la notación binaria. Siempre es más fácil recordar 1F5E que 0001111101011110, ¿o no? 
+	Para obtener el valor numérico decimal aplicamos lo de siempre, con la base apropiada:</font></p>
+<font face="Arial" size="2">	
+	</font><p></p><blockquote><font face="Arial" size="2">1*16^3 + 15*16^2 + 5*16^1 + 14*16^0 = 8030 (porque Fh=15d, Eh=14d)</font></blockquote><p></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Es frecuente, para evitar confusiones cuando programemos, colocar un cero ("0") delante de los 
+	números expresados en hexadecimal que empiecen por una letra, pues el ensamblador podría interpretarlo como una
+	palabra clave o una posible etiqueta (que a lo mejor está definida más adelante en el código) en lugar de un número.
+	En el caso de los 80x86, la palabra ADD es una instrucción para sumar enteros, mientras que 0ADDh sería el número 
+	decimal 2781. Veremos que la sintaxis de NASM permite también escribir 0xADD en su lugar.</font></p>
+
+<font face="Arial" size="2">	</font><p></p><li><font face="Arial" size="2"><a name="OPLOG"><b>Operaciones lógicas</b></a></font></li><p></p>
+<font face="Arial" size="2">	
+	</font><p align="justify"><font face="Arial" size="2">Existen algunas operaciones básicas que se pueden realizar con bits denominadas operaciones lógicas. 
+	Éstas se llaman normalmente por sus nombres ingleses: NOT, AND, OR, XOR. Existen algunas más, pero en realidad son 
+	combinaciones de las anteriores (de hecho XOR también lo es de las otras, pero es suficientemente útil para 
+	justificar su presencia).</font></p>
+<font face="Arial" size="2">	
+	</font><p align="justify"><font face="Arial" size="2">La operación NOT ("no") se realiza sobre un bit, y consiste en invertir su valor. NOT 0 = 1, 
+	NOT 1 = 0. Normalmente se asimilan estos valores con "verdadero" (uno) y "falso" (cero). Así, podemos leer 
+	"no falso = verdadero", "no verdadero = falso".</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">AND significa "y", y relaciona dos bits. El resultado es verdadero si y sólo si los dos operandos 
+	son verdaderos:</font></p>
+<font face="Arial" size="2">		</font><blockquote><font face="Arial" size="2">0 AND 0 = 0<br>
+		0 AND 1 = 0<br>
+		1 AND 0 = 0<br>
+		1 AND 1 = 1</font></blockquote>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">OR viene de "o"; para saber el resultado de "A OR B" nos preguntamos, ¿es verdadero A o B?</font></p>
+<font face="Arial" size="2">		</font><blockquote><font face="Arial" size="2">0 OR 0 = 0<br>
+		0 OR 1 = 1<br>
+		1 OR 0 = 1<br>
+		1 OR 1 = 1</font></blockquote>
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Ese resultado será verdadero con que uno de los operandos sea verdadero.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">XOR tiene su origen en "eXclusive OR" ("o" exclusivo). Es verdadero si uno y sólo uno de los 
+	operandos es verdadero:</font></p>
+<font face="Arial" size="2">		</font><blockquote><font face="Arial" size="2">0 XOR 0 = 0<br>
+		0 XOR 1 = 1<br>
+		1 XOR 0 = 1<br>
+		1 XOR 1 = 0</font></blockquote>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Podemos definir (y de hecho se hace) estos mismos operadores para agrupaciones de bits, y se 
+	realizan entonces entre bits de igual peso. Por ejemplo 1101 XOR 0011 = 1110. Aunque según su propia definición
+	sólo se pueden realizar con ceros y unos, podemos abreviar lo anterior como 0Dh XOR 3h = 0Eh</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">¿Sirven para algo las operaciones lógicas? La respuesta es, sin lugar a dudas, sí. Un circuito 
+	digital está compuesto casi exclusivamente por pequeños elementos llamados puertas lógicas que realizan estas 
+	operaciones, que se combinan masivamente para formar sistemas completos. 
+
+	</font></p><p align="justify"><font face="Arial" size="2">Claro que nosotros no vamos a diseñar circuitos, sino a programarlos, pero en este caso seguirán
+	siendo útiles. Supongamos que queremos saber si los bits 0,2 y 4 de un grupo de 
+	8 bits llamado 'A' valen 1. Un procesador, como veremos, incluye entre sus operaciones básicas las lógicas; 
+	podríamos	hacer algo como "00010101 XOR (A AND (00010101))" Con dos operaciones (AND, y luego con lo que dé, 
+	XOR)	no tenemos más que mirar el resultado: si es 0, esos 3 bits estaban a uno, y si no lo es, al menos uno de ellos
+	estaba a cero. ¿Por qué? La operación AND pone a 0 todos los bits excepto los número 0,2 y 4, que los deja como
+	están. La operación XOR lo que hace es poner a 0 los bits que estuvieran a uno, porque 1 XOR 1 = 0. Si el resultado 
+	no es cero, alguno de esos tres bits era un cero.</font></p>
+
+<font face="Arial" size="2">	</font><p><font face="Arial" size="2"><a name="REPINF"><li><b>Representación de información en un ordenador</b></li></a></font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Un procesador (llamados indistintamente así, "microprocesadores" o incluso simplemente "micros") 
+	contiene en su interior pequeños dispositivos que pueden almacenar números de cierta cantidad de bits, denominados 
+	registros. Ahí guardará la información que vaya a manejar temporalmente, para luego, si procede, guardarla en memoria,
+	en el disco duro, o donde sea. En el caso de los 80x86 los registros básicos son de 16 bits, por lo que en uno de estos
+	registros podemos escribir cualquier número desde el 0 hasta el 2^N - 1, es decir, desde 0000000000000000b hasta
+	1111111111111111b. Sin embargo, siguiendo este razonamiento, sólo hemos determinado cómo representar números
+	enteros positivos. ¿Qué pasa con números como -184 o incluso 3.141592?</font></p>
+
+<font face="Arial" size="2">	</font><p><font face="Arial" size="2"><a name="ARITENT">-<u>Aritmética de enteros</u></a></font></p><p>
+
+<font face="Arial" size="2">	</font></p><p align="justify"><font face="Arial" size="2">Vamos a ver cómo operar con números en binario para entender la importancia del sistema de 
+	representación que se emplee. La suma/resta de enteros positivos en binario es idéntica a cuando empleamos 
+	representación decimal, pero con unas regla mucho más sencillas:</font></p>
+<font face="Arial" size="2">		
+		</font><blockquote><font face="Arial" size="2">0+0=0<br>
+			0+1=1<br>
+			1+0=1<br>
+			1+1=0 y me llevo 1<br><br>
+			0-0=0<br>
+			0-1=1 y me llevo 1<br>
+			1-0=1<br>
+			1-1=0</font></blockquote>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Por ejemplo, sumando/restando 10101 + 110:</font></p>
+
+<font face="Arial" size="2">	</font><blockquote><table border="0">
+        <tbody>
+        <tr>
+			<td><font face="Arial" size="2">llevadas:</font></td>
+			<td></td>
+			<td></td>
+            	<td><font face="Arial" size="2">1</font></td>
+			<td></td>
+          	<td></td>
+            	<td></td>
+			<td></td>
+			<td></td>
+			<td><font face="Arial" size="2">1</font></td>
+            	<td><font face="Arial" size="2">1</font></td>
+			<td><font face="Arial" size="2">1</font></td>
+          	<td></td>
+            	<td></td>
+        </tr>
+		<tr>
+			<td></td>
+			<td></td>
+			<td><font face="Arial" size="2">1</font></td>
+            	<td><font face="Arial" size="2">0</font></td>
+			<td><font face="Arial" size="2">1</font></td>
+          	<td><font face="Arial" size="2">0</font></td>
+            	<td><font face="Arial" size="2">1</font></td>
+			<td></td>
+			<td></td>
+			<td><font face="Arial" size="2">1</font></td>
+            	<td><font face="Arial" size="2">0</font></td>
+			<td><font face="Arial" size="2">1</font></td>
+          	<td><font face="Arial" size="2">0</font></td>
+            	<td><font face="Arial" size="2">1</font></td>
+        </tr>
+	   <tr>
+			<td><font face="Arial" size="2">SUMA</font></td>
+			<td><font face="Arial" size="2">+</font></td>
+			<td></td>
+            	<td></td>
+			<td><font face="Arial" size="2">1</font></td>
+          	<td><font face="Arial" size="2">1</font></td>
+            	<td><font face="Arial" size="2">0</font></td>
+			<td><font face="Arial" size="2">&nbsp;&nbsp;&nbsp;&nbsp;RESTA</font></td>
+			<td><font face="Arial" size="2">-</font></td>
+			<td></td>
+            	<td></td>
+			<td><font face="Arial" size="2">1</font></td>
+          	<td><font face="Arial" size="2">1</font></td>
+            	<td><font face="Arial" size="2">0</font></td>
+        </tr>
+	   <tr>
+			<td></td>
+			<td></td>
+			<td><font face="Arial" size="2">-</font></td>
+          	<td><font face="Arial" size="2">-</font></td>
+			<td><font face="Arial" size="2">-</font></td>
+          	<td><font face="Arial" size="2">-</font></td>
+            	<td><font face="Arial" size="2">-</font></td>
+			<td></td>
+			<td></td>
+			<td><font face="Arial" size="2">-</font></td>
+            	<td><font face="Arial" size="2">-</font></td>
+			<td><font face="Arial" size="2">-</font></td>
+          	<td><font face="Arial" size="2">-</font></td>
+            	<td><font face="Arial" size="2">-</font></td>
+        </tr>
+	   <tr>
+			<td></td>
+			<td></td>
+			<td><font face="Arial" size="2">1</font></td>
+          	<td><font face="Arial" size="2">1</font></td>
+			<td><font face="Arial" size="2">0</font></td>
+          	<td><font face="Arial" size="2">1</font></td>
+            	<td><font face="Arial" size="2">1</font></td>
+			<td></td>
+			<td></td>
+			<td><font face="Arial" size="2">0</font></td>
+            	<td><font face="Arial" size="2">1</font></td>
+			<td><font face="Arial" size="2">1</font></td>
+          	<td><font face="Arial" size="2">1</font></td>
+            	<td><font face="Arial" size="2">1</font></td>
+	    </tr>
+	    </tbody></table></blockquote>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Las "llevadas" se conocen como bits de acarreo o, en inglés, de <i>carry</i>.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2"> Si representamos números con 
+	un máximo número de bits, puede darse el caso de que al sumarlos, el resultado no quepa. Con cuatro bits 1111+1=10000,
+	dando un resultado de 5 bits. Como sólo nos podemos quedar con los cuatro últimos, el carry se pierde.
+	En un ordenador el carry se almacena en un sitio aparte para indicar que nos llevábamos una pero no hubo dónde 
+	meterla, y el resultado que se almacena es, en este caso, 0000. Salvo que se diga lo contrario, si el resultado de 
+	una operación no cabe en el registro que lo contiene, se trunca al número de bits que toque.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Un modo de representar tanto números negativos como positivos, sería reservar un bit (el de mayor 
+	peso, por ejemplo) para indicar positivo o negativo. Una posible representación de +13 y -13 con registros de ocho 
+	bits:</font></p>
+
+<font face="Arial" size="2">	</font><blockquote><font face="Arial" size="2">00001101 +13<br>
+			10001101 -13</font></blockquote>
+<font face="Arial" size="2">	
+	</font><p align="justify"><font face="Arial" size="2">Para sumar dos números miraríamos los bits de signo; si son los dos negativos o positivos los 
+	sumamos y dejamos el bit de signo como está, y si hay uno negativo y otro positivo, los restamos, dejando el bit de 
+	signo del mayor. Si quisiéramos restarlos haríamos algo parecido, pero considerando de manera distinta los signos.
+	Cómo primer método no está mal, pero es mejorable. Saber si un número es negativo o positivo es tan sencillo
+	como mirar el primer bit, pero hay que tener en cuenta que esas comparaciones y operaciones las tiene que hacer un 
+	sistema electrónico, por lo que cuanto más directo sea todo mejor. Además, tenemos dos posibles representaciones para 
+	el cero, +0 y -0, lo cual desperdicia una combinación de bits y, lo que es peor, obliga a mirar dos veces antes de 
+	saber si el resultado es 0. Una manera muy usada de comprobar si un número es igual a otro es restarlos; si la resta da 
+	cero, es que eran iguales. Si hemos programado un poco por ahí sabremos que una comparación de este tipo es terriblemente 
+	frecuente, así que el método no es del todo convincente en este aspecto.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">La representación en complemento a dos cambia el signo a un número de la siguiente manera: invierte 
+	todos los bits, y suma uno. Con nuestro querido +13 como 00001101b, hacemos lo siguiente: al invertir los bits
+	tenemos 11110010b, y si sumamos 1, 11110011b. Ya está, -13 en complemento a dos es 11110011.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Molaba más cambiar el signo modificando un bit, es cierto, pero veamos la ventaja. ¿Qué pasa cuando 
+	sumamos +13 y -13, sin tener en cuenta signos ni más milongas?</font></p>
+
+<font face="Arial" size="2">	<font face="Terminal">
+			<blockquote>00001101<br>
+			11110011<br>
+			--------<br>
+			00000000</blockquote>
+	</font>
+
+	</font><p align="justify"><font face="Arial" size="2">Efectivamente, cero. Para sumar números en complemento a dos no hace falta comprobar el signo. Y 
+	si uno quiere restar, no tiene más que cambiar el signo del número que va restando (inviertiendo los bits y sumando 
+	uno), y sumarlos. ¿Fácil, no? Lo bueno es que con este método podemos hacer que el primer bit siga significando el 
+	signo, por lo que no hace falta mayores comprobaciones para saber si un número es positivo o negativo. Si seguimos 
+	con ocho bits tenemos que los números más altos/bajos que se pueden representar son 0111111b (127) y 10000000 (-128)
+	En general, para N bits, podremos almacenar cualquier número entre 2^(N-1) - 1 y -2^(N-1).</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Es un buen momento para introducir el concepto de <i>overflow</i> (desbordamiento, aunque no tan 
+	común en español) Cuando al operar con dos números el resultado excede el rango de representación, se dice que ha 
+	habido overflow. Esto es sutilmente diferente a lo que sucedía con el carry. No es que "nos llevemos una", es que el 
+	resultado	ha producido un cambio de signo. Por ejemplo, la suma de 10010010 + 10010010, si consideramos ambos
+	números con su signo (-110d + -110d), nos da como resultado 00100100, 36d. Ahora el resultado ya no es negativo, 
+	porque hemos "dado la vuelta al contador", al exceder -128 en la operación. Los procesadores también incluyen un 
+	indicador que se activa con estas situaciones, pero es tarea del programador comprobar los indicadores, y saber en 
+	todo momento si trabajamos dentro del rango correcto.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Una ventaja adicional del complemento a dos es que operamos indistintamente con números con signo 
+	o sin él, es decir, si queremos podemos utilizar todos los bits para representar números positivos exclusivamente 
+	(de 0 a 2^N - 1), haciendo exactamente las mismas operaciones. El que un número sea entero positivo o entero con 
+	signo depende únicamente de la interpretación que haga el programador del registro; tendrá que comprobar, si
+	fuera necesario, los bits de overflow y carry para operar correctamente según sus intereses.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Las multiplicaciones/divisiones se pueden descomponer en una retahíla de sumas y restas, por lo que 
+	no merece la pena ahondar demasiado; responden a consideraciones similares, salvo que el producto de N bits por
+	N bits da, en general, 2N bits, y que ahora sí que habrá que especificar si la operación va a ser entre números con o
+	sin signo.</font></p>
+<font face="Arial" size="2">			
+	</font><p><font face="Arial" size="2"><a name="NUMREAL">-<u>Números reales</u></a></font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">La forma más simple de representación de números reales es sin duda la de <i>punto fijo</i> (o coma 
+	fija, según digas usar una cosa u otra para separar las cifras). La idea consiste en plantar un punto entre los bits, 
+	y ya está. Ejemplo:</font></p>
+<font face="Arial" size="2">	
+		</font><blockquote><font face="Arial" size="2">1110.0111b</font></blockquote>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">El peso de las cifras a la izquierda del punto son las mismas que para enteros, mientras que a la 
+	derecha el peso sigue disminuyendo en potencias de dos.. pero negativas.</font></p>
+
+<font face="Arial" size="2">		</font><blockquote><font face="Arial" size="2">1110.0111b = 1*2^3 + 1*2^2 + 1*2^1 + 0*2^0 + 0*2^(-1) + 1*2^(-2) + 1*^2(-3) +1*2^(-4)</font></blockquote>
+
+<font face="Arial" size="2">	</font><p><font face="Arial" size="2">Como 2^(-N) = 1/(2^N) tenemos que los pesos son 0.5, 0.25, 0.125 etc</font></p>
+
+<font face="Arial" size="2">		</font><blockquote><font face="Arial" size="2">1110.0111b = 8 + 4 + 2 + 0 + 0 + 0.25 + 0.125 + 0.0625 = 14.4375</font></blockquote>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">que no es más que coger el número 11100111b, pasarlo a decimal, y dividirlo entre 2^P, siendo P el 
+	número de cifras a la derecha del punto. Se opera exactamente igual que con enteros (podemos dejar un bit de signo 
+	si nos apetece, haciendo complemento a dos), siempre que los dos operandos tengan no sólo el mismo número de bits, 
+	sino el punto en el mismo sitio. Podemos seguir usando nuestra calculadora de enteros para manejar reales si 
+	decidimos usar	este método.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Algunos dispositivos de cálculo, especialmente de procesado de señal, usan este sistema por su 
+	sencillez y velocidad. La "pega" es la precisión. Ahora no sólo tenemos que intentar "no pasarnos" del número de bits
+	por exceso, sino que las potencias negativas limitan nuestra precisión "por abajo". Un número como 1/3
+	(0.3333 etc) podemos intentar expresarlo en los 8 bits de arriba, pero nos encontraremos con que el
+	número de potencias dos negativas necesarias para hacerlo nos sobrepasan ampliamente (infinitas).</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">0000.0101 es lo mejor que podemos aproximar, y sin embargo tenemos un número tan feo como 0.3125
+	El problema no es tanto el error como el error relativo. Cometer un error de aproximadamente 0.02 puede no
+	ser grave si el número es 14 (0.02 arriba o abajo no se nota tanto), pero si se trata de 0.3333.., sí.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Los números en punto <i>flotante</i> (o coma flotante) amortiguan este problema complicando un poco 
+	(un mucho) las operaciones. Parecerá muy muy engorroso, pero es lo que se usa mayormente en ordenadores, así que 
+	algo bueno tendrá.</font></p>
+<font face="Arial" size="2">	
+	</font><p align="justify"><font face="Arial" size="2">Vamos con un primer intento con anestesia, para no marear demasiado. Digamos que de los 8 bits de 
+	antes (que, de todos modos, son muy poquitos; lo normal en números reales es 32,64,80..) dedicamos 2 a decir cuánto
+	se desplaza el punto, y los 6 restantes a almacenar el número propiamente.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Un número tal que 11011110 que representase a un número real estaría en realidad compuesto por 
+	1.10111 y 10, o sea, 3.4375 y 2; el dos indica posiciones desplazadas (potencias de 2), así que el número en cuestión 
+	sería 3.4375 * 2^2 = 13.75 Podríamos aún así representar un número tan pequeño como 0.03125, 0.03125*2^0, con "0.00001 00", 
+	o sea, 00000100 Hemos ampliado el margen de representación por arriba y por abajo, a costa de perder precisión relativa, 
+	es cierto, pero haciéndola más o menos constante en todo el rango, porque cada número se puede escribir con 6 cifras 
+	binarias ya esté el punto un poco más a la izquierda o a la derecha. La parte que representa las cifras propiamente 
+	se denomina <i>mantisa</i>, y en este caso los dos bits separados forman el <i>exponente</i>.
+
+	</font></p><p align="justify"><font face="Arial" size="2">El estándar IEEE 754 describe cómo almacenar números en punto flotante de manera un poco más
+	profesional que todo esto. Para 32 bits se dedican 8 para el exponente, 23 para la mantisa y 1 para el signo. Se 
+	trabaja sólo con números positivos y bit de signo aparte porque dada la complejidad de las operaciones con números 
+	reales, no hay ninguna ventaja importante en usar cualquier otra cosa. En este formato el exponente se calcula de 
+	modo que la mantisa quede alineada con un uno a la izquierda de todo, y este primer uno no se almacena. El exponente 
+	además se guarda en "exceso 127", que consiste en restarle 127 al número almacenado: si la parte del exponente fuese
+	11011111b = 223d, al restarle 127 tendríamos el exponente que representa, 96. Vamos con un ejemplo:</font></p>
+
+<font face="Arial" size="2">	</font><blockquote><table border="1" cellpadding="3">
+        <tbody>
+        <tr>
+			<th><font face="Arial" size="2">signo</font></th>
+	           	<th><font face="Arial" size="2">exponente</font>
+	          	</th><th><font face="Arial" size="2">mantisa</font>
+	    	</th></tr>
+        <tr>
+            	<td><font face="Arial" size="2">1</font></td>
+            	<td><font face="Arial" size="2">0111 0101</font></td>
+            	<td><font face="Arial" size="2">101 0101 0110 1110 1110 0011</font></td>
+		</tr>
+	</tbody></table></blockquote>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">El bit de signo es 1, así que tenemos un número negativo. La mantisa es 1.10101010110111011100011, 
+	porque el primer '1' se sobreentiende siempre, ya que al almacenar el número se alteró el exponente para alinearlo 
+	así; el valor decimal de este número es "1.66744649410248". El exponente es 01110101b = 117d, es decir, -10
+	porque en exceso 127 se le resta esta cantidad. El número representado es -1.66744649410248*2^-10 = -0.0016283657169
+	más o menos (suponiendo que no me haya confundido).</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Las operaciones con números en punto flotante son mucho más complejas. Exigen comprobar signos, 
+	exponentes, alinear las mantisas, operar, normalizar (esto es, desplazar la mantisa / modificar el exponente para que
+	quede alineada con ese primer "1" asomando).. Sin embargo existen circuitos específicos dentro de los
+	procesadores para realizar estos tejemanejes, e incluso para calcular raíces cuadradas, funciones trigonométricas...
+	Lo que sucede es que son bastante más lentos, como era de esperar, que los cálculos con enteros, por lo que
+	se separan unas y otras operaciones según el tipo de datos que vayamos a manejar. El estándar mencionado admite
+	números especiales como +infinito, -infinito y NaN (Not a Number), con los que es posible operar. Por ejemplo, 
+	infinito+infinito=infinito, mientras que infinito-infinito es una indeterminación, y por tanto, NaN.</font></p>
+
+<font face="Arial" size="2">	</font><p><font face="Arial" size="2"><a name="BCD">-<u>Codificación BCD</u></a></font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">BCD viene de Binary Code Digit, o dígito en código binario, y es una manera alternativa
+	de codificar números. Consiste en algo tan simple como dividir el número en sus dígitos decimales,
+	y guardar cada uno en 4 bits. Por ejemplo, el número 1492 se almacenaría en como mínimo 16 bits, resultando
+	el número 1492h, o 0001 0100 1001 0010b (separo las cifras binarias de 4 en 4 para que se vea mejor). Así, sin
+	más, se desperdicia un poco de espacio ya que no tienen cabida los seis nibbles 1010, 1011, 1100, 1101, 1110,
+	y 1111 (el número más grande representable así en 16 bits es 9999), por lo que a veces se emplean estas 
+	combinaciones extra para el signo, un punto, una coma, etc.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">La ventaja de este modo de almacenar números es que la conversión a decimal es
+	inmediata (cada grupo de 4 bits tiene una correspondencia), mientras que si nos limitásemos a guardar
+	el número que representa almacenado en binario el procedimiento sería más costoso. Con la potencia de
+	cómputo de que se dispone ahora, y dado que las conversiones sólo son necesarias para representar la 
+	información final para que la lea un humano, puede parecer de escasa utilidad, pero en dispositivos
+	en los que estas operaciones son tan frecuentes como cualquier otra, compensa especializar determinados
+	circuitos a su manipulación. Algunas posibles aplicaciones podrían ser terminales "tontos" de
+	banca, o calculadoras. Un caso claro de esta última podrían ser algunas calculadoras HP basadas en
+	el microprocesador Saturn que tiene un modo de funcionamiento completamente en BCD. De hecho los números
+	reales los almacena en BCD en 64 bits, formando 16 dígitos: uno para el signo, 12 para la mantisa,
+	y 3 para el exponente. El BCD no será, sin embargo, la representación más habitual.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Existen dos tipos de formatos BCD: el conocido como <i>empaquetado</i>, con 2 dígitos
+	en cada byte (que, recordemos, es con frecuencia la mínima unidad "práctica" en un procesador), y
+	<i>desempaquetado</i>, con un dígito por byte (dejando siempre los 4 bits superiores a cero).</font></p>
+
+<font face="Arial" size="2">	</font><p><font face="Arial" size="2"><a name="TXTSIMG">-<u>Texto, sonido, imágenes</u></a></font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Queda ver cómo se manejan en un sistema digital otros datos de uso frecuente. Generalmente la unidad
+	mínima de almacenamiento es el byte, y por ello la codificación más habitual para texto asigna un byte
+	a cada carácter considerado útil, hasta formar una tabla de 256 correspondencias byte-carácter. Los
+	que determinaron semejante lista de utilidad fueron, como casi siempre, americanos, en lo que se conocen
+	como códigos ASCII. Como dejaron fuera del tintero algunos caracteres extranjeros, eñes, tildes variopintas,
+	etc, surgieron numerosas variantes. Realmente los primeros 128 caracteres (los formados con los siete bits menos
+	significativos, y el octavo bit a cero) son comunes a todas ellas, mientras que los 128 siguientes forman
+	los caracteres ASCII extendidos, que son los que incluyen las peculiaridades.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Si alguien tiene una ligera noción de lo que hacen los chinos, árabes o japoneses, se dará cuenta de 
+	que con 256 caracteres no hacen nada ni por el forro. A fin de hacer un único código universal surgió el UNICODE,
+	que es con el que deberían almacenarse todos los textos, aunque por desgracia no sea así. Sin embargo tiene
+	una implantación cada vez mayor, aunque a un paso un poco lento. Si bien tiene unas pequeñas reglas que no hacen 
+	la correspondencia directa código -&gt; carácter, se podría decir grosso modo que cada carácter se representa con 2 
+	bytes, y no uno, dando lugar a, en principio, 65536 caracteres distintos, dentro de los cuales, por supuesto, se 
+	incluye la tablita ASCII.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">El sonido se produce cuando una tensión variable con el tiempo llega a un altavoz, convirtiendo esas 
+	variaciones de tensión en variaciones de presión en el aire que rodea a la membrana. Para almacenar audio se toman 
+	muestras periódicas del valor de dicha tensión (cuando se graba sucede al revés; son las variaciones de presión sobre
+	el micrófono las que producen el voltaje mencionado), guardando ese valor. La precisión con que se grabe el
+	sonido depende del número de muestras que se tomen por segundo (típicamente 8000, 22050 ó 44100) y de los bits
+	que se empleen para cada muestra (con frecuencia 8 ó 16). De este modo, para grabar 1 minuto de audio
+	a 44100 muestras por segundo, en estéreo (dos canales), y 16 bits, necesitaremos 60*44100*2*16 bits, es
+	decir, 10 megabytes aproximadamente. Existen formatos de audio que toman esas muestras y las comprimen
+	aplicando un determinado algoritmo que, a costa de perjudicar más o menos la calidad, reducen el espacio
+	ocupado. Un archivo ".wav" corresponde, generalmente, a un simple muestreo del audio, mientras que uno ".mp3"
+	es un formato comprimido.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Para las imágenes lo que hacen es muestrear en una cuadrícula (cada cuadrado, un <i>píxel</i>) las 
+	componentes de rojo, verde y azul del color, y asignarles un valor. Un archivo ".bmp" por ejemplo puede asignar 3 
+	bytes a cada píxel, 256 niveles para cada color. Se dice entonces que la calidad de la imagen es de 24 bits. Una 
+	imagen de 800 píxels de ancho por 600 de alto ocuparía 800*600*24 bits, casi 1.4 megas. De nuevo surgen 
+	los formatos comprimidos como ".gif",".png",".jpg".. que hace que las imágenes ocupen mucho menos espacio.</font></p>
+
+<font face="Arial" size="2">	</font><p><font face="Arial" size="2"><a name="MEM"><li><b>Memorias</b></li></a></font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Una memoria es un dispositivo electrónico en el que se pueden escribir y leer datos. Básicamente se 
+	distinguen en <i>ROM</i>, o memorias de sólo lectura (Read Only Memory), y <i>RAM</i>, mal llamadas memorias de acceso 
+	aleatorio (Random Access Memory). Esto último viene de que hay cierto tipo de sistemas de almacenamiento que son 
+	secuenciales, lo que significa que para leer un dato tienes primero que buscarlo; es lo que sucede con las cintas, que 
+	tienes que hacerlas avanzar o retroceder hasta llegar al punto de interés. En ese sentido, tanto las ROM como las RAM 
+	son memorias de acceso aleatorio (puedes acceder a cualquier posición directamente); la distinción entre unas y otras 
+	es actualmente bastante difusa, y podríamos decir que se reduce ya únicamente a la volatilidad, que ahora comentaré.</font></p>
+<font face="Arial" size="2">	
+	</font><p align="justify"><font face="Arial" size="2">Una ROM pura y dura viene grabada de fábrica, de tal modo que sólo podemos leer los datos que se 
+	escribieron en ella en el momento de su fabricación. Existen luego las <i>PROM</i> (P de Programmable, que evidentemente 
+	significa programable), que pueden ser grabadas una única vez por el comprador. En este contexto se pueden encontrar las 
+	siglas <i>OTP-ROM</i>, de One Time Programmable, o programables una vez. La <i>EPROM</i> es una memoria que se puede borrar 
+	completamente por medios no electrónicos (Erasable Programmable ROM), generalmente descubriendo una pequeña abertura que 
+	tienen en la parte superior del encapsulado y exponiéndola durante un tiempo determinado a luz con contenido ultravioleta, 
+	dejándolas así listas para volver a programarlas. Las <i>EEPROM</i> (Electrically Erasable PROM) son memorias que pueden ser 
+	borradas sometiéndolas a tensiones más altas que las habituales de alimentación del circuito. Son de borrado instantáneo, 
+	al contrario que las EPROM normales, pero generalmente exigen también ser extraídas del circuito para su borrado. 
+	Todas éstas han ido dejando paso a las memorias <i>FLASH</i>, que pueden ser borradas como parte del funcionamiento "normal" 
+	de la memoria, completamente o incluso por bloques; sin embargo la velocidad de escritura es muy inferior a la de
+	las memorias RAM. La cualidad que caracteriza fundamentalmente todas estas memorias es que no son volátiles; uno 
+	puede apagar el circuito y el contenido de la memoria seguirá ahí la próxima vez que lo encendamos de nuevo.
+	La BIOS de los ordenadores constituye un pequeño programa almacenado en ROM (antaño EPROMs, ahora FLASH)
+	que ejecutará el procesador nada más comenzar a funcionar, y con el que comprobará que todos los cacharrillos
+	conectados a él están en orden, para a continuación cederle el paso al sistema operativo que habrá ido buscar
+	al disco duro o adonde sea.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Las memorias RAM, por el contrario, pierden toda su información una vez desconectadas de su 
+	alimentación; es, sin embargo, un precio muy pequeño a pagar a cambio de alta velocidad, bajo coste y elevada 
+	densidad de integración (podemos hacer memorias de gran capacidad en muy poco espacio), sin olvidar que podemos
+	escribir en ella cuantas veces queramos, de manera inmediata. Aunque hay muchos subtipos 
+	de memoria RAM, sólo voy a comentar muy por encima los dos grandes grupos: estáticas (<i>SRAM</i>) y dinámicas 
+	(<i>DRAM</i>). Las denominadas <i>SDRAM</i> no son, como algún animal de bellota ha puesto por ahí en internet, 
+	Estáticas-Dinámicas (una cosa o la otra, pero no las dos). Las memorias SDRAM son RAMs dinámicas <i>síncronas</i>, 
+	lo cual quiere decir que funcionan con un relojito que marca el ritmo de trabajo. Las DRAM que se montan en
+	los ordenadores actuales son de este tipo.</font></p>
+<font face="Arial" size="2">	
+	</font><p align="justify"><font face="Arial" size="2">La distinción entre estática y dinámica es sencilla. Una memoria estática guarda sus datos mientras 
+	esté	conectada a la alimentación. Una dinámica, además de esto, sólo retiene la información durante un tiempo
+	muy bajo, en algunos casos del orden de milisegundos. ¿Cómo? ¿Milisegundos? ¿Dónde está el truco?
+	Lo que sucede es que cada bit está guardado en la memoria en forma de carga de un pequeño	condensador, que retiene 
+	una determinada tensión entre sus extremos. Ese condensador por desgracia no es perfecto (tiene pérdidas), así que 
+	con el paso del tiempo ese voltaje va decayendo lentamente hasta que,	si nadie lo evita, su tensión cae a un nivel 
+	tan bajo que ya no se puede distinguir si lo que había ahí era un "1" o un "0" lógico. Por ello tiene que haber un 
+	circuito anexo a la memoria propiamente dicha que se encargue cada cierto tiempo de leer la
+	tensión de ese condensador, y cargarlo para elevarla al nivel correcto. Todo esto se hace automáticamente
+	a nivel de circuito, por lo que al programador le da igual el tipo de memoria del que se trate.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Las memorias dinámicas son más lentas que las estáticas, y no sólo por este proceso 
+	denominado <i>refresco</i>, pero a cambio son mucho más baratas e integrables; la memoria principal de un 
+	ordenador es DRAM por este motivo.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Las SRAM son, por tanto, más caras, grandes y rápidas. Se reservan para situaciones en las que la 
+	velocidad es vital, y ese sobrecoste bien merece la pena; es el caso de las memorias cache, que son las que se 
+	encuentran más cerca del procesador (generalmente dentro del propio encapsulado). Un caso particular de memoria 
+	estática, aunque por su naturaleza no considerada como tal, es la de los registros del procesador; se trata de, con 
+	diferencia, la memoria más rápida y cara de todo el sistema, y un procesador sólo cuenta con unos pocos registros 
+	(algunas decenas en el mejor de los casos) de tamaño variable (en el caso de la familia x86, 16 y 32 bits, 
+	fundamentalmente).</font></p>
+<font face="Arial" size="2">	
+	</font><p align="justify"><font face="Arial" size="2">Una memoria está estructurada en palabras, y cada palabra es un grupo de bits, accesible a través de 
+	su dirección. Cada dirección es un número que identifica a una palabra. Un circuito de memoria está conectado entonces
+	a, al menos, dos tipos de líneas, o hilos por donde viajan los bits (voltaje): datos, por donde viaja la información, 
+	y direcciones, por donde se identifica la posición que ocupa esa información. Existe un tercer tipo de líneas 
+	denominado de control; con estás líneas se indica el tipo de operación que se desea realizar sobre la memoria (leer 
+	o escribir, básicamente)</font></p>
+<font face="Arial" size="2">	
+	</font><p align="justify"><font face="Arial" size="2">Un ejemplo de memoria podría tener 8 líneas de datos y 16 de direcciones. Si uno quisiera acceder 
+	a la palabra en la posición 165, colocaría el número 0000000010100101 (165 en binario) sobre las líneas de 
+	direcciones, y tras indicarle la operación con las líneas de control, aparecería en un pequeño lapso de tiempo el 
+	byte	almacenado en esa dirección (un byte, en este caso, porque hay 8 líneas de datos y, por tanto, 8 bits).
+	Para escribir sería el procesador quien colocaría el dato sobre las líneas de datos, así como la dirección,
+	y al indicar la operación de escritura, la memoria leería ese dato y lo almacenaría en la posición indicada.
+	Una memoria con un bus (o conjunto de líneas) de 16 bits de ancho, y un bus de datos de 8 bits, tiene una capacidad
+	de 2^16 * 8 = 524288 bits, es decir, 65536 bytes (64k). La anchura del bus de datos influye no sólo en el tamaño
+	total de la memoria para un bus de direcciones dado, sino también la velocidad a la que son leídos/escritos estos
+	datos; con un bus de 64 bits podríamos traer y llevar 8 bytes en cada viaje, y no uno sólo.</font></p>
+
+<font face="Arial" size="2">	</font><p><font face="Arial" size="2"><a name="PYE"><li><b>Procesadores, ensambladores</b></li></a></font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Un procesador está compuesto fundamentalmente por una unidad de acceso a memoria (que se encarga de 
+	intercambiar datos con el exterior), un conjunto de registros donde almacenar datos y direcciones, una unidad 
+	aritmético-lógica (ALU o UAL, según se diga en inglés o en español) con la que realizar operaciones entre los 
+	registros, y una unidad de control, que manda a todas las demás. Por supuesto este modelo rudimentario se puede 
+	complicar todo lo que queramos hasta llegar a los procesadores actuales, pero en esencia es lo que hay. </font></p>
+<font face="Arial" size="2">	
+	</font><p align="justify"><font face="Arial" size="2">El procesador obtiene la información de lo que debe hacer de la memoria principal. Ahí se encuentran 
+	tanto el código (el programa con las instrucciones a ejecutar) como los datos (la información sobre la que debe 
+	operar). Algunos procesadores tienen código y datos en dos sistemas de memoria diferentes, pero en
+	el caso de los ordenadores domésticos van mezclados.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Uno de los registros, conocido como contador de programa, contiene la dirección de memoria donde se 
+	encuentra la siguiente instrucción a ejecutar. En un procesador simplificado, en cada ciclo de reloj se accede a la 
+	memoria, y se lee el dato apuntado por el contador de programa (llamado normalmente PC por sus siglas en inglés, 
+	Program Counter). Este dato contiene el código de la instrucción a ejecutar, que puede ser leer algo de memoria
+	para guardarlo en un registro, guardar el contenido de un registro en memoria, realizar alguna operación con
+	uno o más registros.. El PC mientras tanto se incrementa para apuntar a la nueva instrucción.
+	Los distintos subcircuitos que forman el procesador están interconectados obedeciendo ciertas señales a modo
+	de llaves de paso. Cuando el procesador obtiene de la memoria el código de una instrucción, es recogido
+	por la <i>unidad de control</i> que decide qué datos deben moverse de un registro a otro, qué operación
+	ha de realizarse, etc, enviando las señales necesarias a estos subcircuitos. Por ejemplo, es frecuente que el 
+	programa tenga que realizar un salto en función de los resultados de una operación (para ejecutar o no un 
+	cierto fragmento de código) a la manera de las estructuras de alto nivel <i>if (condición) then {...} else {...}</i>.
+	Un salto no supone nada más que cargar en PC otro valor. La unidad de control comprueba por lo tanto si
+	la condición es verdadera, y si es así le dice al PC que se cargue con el valor nuevo; en caso
+	contrario, se limita a indicarle qué únicamente ha de incrementarse para apuntar a la siguiente
+	instrucción.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">El conjunto de posibles instrucciones que puede interpretar y ejecutar un procesador recibe el 
+	nombre de <i>código máquina</i>. El código asociado a cada instrucción se llama <i> código de operación</i>. 
+	Es posible hacer un programa con un editor hexadecimal (que en lugar de trabajar en ASCII
+	nos permite introducir los valores numéricos de cada byte en cada posición de un archivo), introduciendo
+	byte a byte el código de cada instrucción. El problema de esto es que, aparte de ser terriblemente aburrido,
+	es muy lento y propenso a error. Para esto es para lo que están los ensambladores.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">El ensamblador es un lenguaje de programación que se caracteriza porque cada instrucción del 
+	lenguaje se corresponde con una instrucción de código máquina; también se conoce como ensamblador el programa
+	que realiza esta tarea de traducción (en inglés no existe confusión al distinguir <i>assembly</i> -el lenguaje-
+	de <i>assembler</i> -el programa-). Un compilador, por el contrario, genera el código máquina a partir de unas
+	 órdenes mucho más generales dadas por el programador; muchas veces podemos compilar el mismo código fuente en 
+	distintos sistemas, porque cada compilador genera el código máquina del procesador que estemos usando. El 
+	ensamblador no es un único lenguaje; hay al menos un lenguaje ensamblador por cada tipo de procesador existente 
+	en el mundo. En el caso de este tutorial, vamos a estudiar un conjunto de procesadores distintos que tienen en 
+	común una buena parte de su código máquina, de tal modo que un programa ensamblado (un código fuente en 
+	ensamblador pasado a código máquina) se podrá ejecutar en distintos equipos.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Por ejemplo, si tenemos una maquinita imaginaria con dos registros llamados A y B, y existe una 
+	instrucción máquina codificada como 1FE4h que copia el dato que haya en A, en B, podríamos encontrarnos con un 
+	ensamblador para este ordenador en el que escribiésemos:</font></p>
+
+<font face="Arial" size="2">	</font><p><font face="Arial" size="2">MOVER A,B</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">de modo que al encontrarse el ensamblador con MOVER A,B lo sustituyese por 1FE4h en nuestro
+	programa en código máquina (el ejecutable). A la palabra o palabras que representan a una determinada instrucción
+	en código máquina se la denomina <i>mnemónico</i>.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Los programas que ensamblan se conocen a veces como macroensambladores, porque permiten utilizar 
+	etiquetas,macros, definiciones.. Todos estos elementos no corresponden exactamente con código máquina, y son conocidos
+	como <i>directivas</i>, pues son en realidad indicaciones al ensamblador de cómo debe realizar su trabajo, facilitando
+	enormemente la programación. Supongamos que queremos copiar el contenido del registro A a las posiciones de memoria 
+	125,126 y 127. La manera de hacerlo más simple sería:</font></p>
+
+<font face="Arial" size="2">	</font><p></p><blockquote><font face="Arial" size="2">MOVER A,dirección(125)<br>
+	MOVER A,dirección(126)<br>
+	MOVER A,dirección(127)</font></blockquote><p></p>
+<font face="Arial" size="2">	
+	</font><p align="justify"><font face="Arial" size="2">pero a lo mejor existe una estructura en nuestro macroensamblador que nos permite sustituir todo eso 
+	por</font></p>
+
+<font face="Arial" size="2">	</font><p></p><blockquote><font face="Arial" size="2">REPITE i=125:127 {MOVER A,dirección(i)}</font></blockquote><p></p>
+<font face="Arial" size="2">	
+	</font><p align="justify"><font face="Arial" size="2">de modo que cuando el ensamblador detecte la directiva "REPITE" con el parámetro "i" genere, antes de
+	proceder a ensamblar, el código equivalente de las tres líneas "MOVER".</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">En algunos casos se pueden llamar pseudoinstrucciones, cuando se manejan exactamente
+	como instrucciones que en realidad no existen. Quizá el caso más claro de los 80x86 sea la instrucción <i>NOP</i>,
+	que le indica al procesador que durante el tiempo que dura la ejecución de esa instrucción no haga nada
+	(aunque parezca que no tiene ninguna utilidad, no es así, pues puede servir, por ejemplo, para crear pequeños retrasos 
+	y así esperar a que un dispositivo esté listo). Esta instrucción, estrictamente hablando, no existe. Sin embargo
+	existe una instrucción que intercambia los contenidos de dos registros; <i>XCHG registro1, registro2</i>. Si los dos 
+	operandos son el mismo, la instrucción no hace nada. En el caso de nuestro NOP, lo que se codifica es la instrucción
+	<i>XCHG AX,AX</i>. Cuando el procesador recoge esa instrucción, intercambia el valor de AX con él mismo, que es una 
+	manera tan buena como cualquier otra de perder un poco de tiempo.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">¿Por qué aprender ensamblador? Bien, todo lo que se puede hacer en un procesador, se puede escribir 
+	en ensamblador. Además, el programa hará exactamente lo que le pidas, y nada más. Puedes conseguir programas más 
+	eficientes en velocidad y espacio que en cualquier otro lenguaje. Cuando lo que se programa es un sistema de limitados
+	recursos, como un microcontrolador (que tienen hasta sus compiladores de C por ahí), esto es vital. Además, al 
+	existir una correspondencia directa ensamblador&lt;-&gt;código máquina, puedes, en teoría, tomar fragmentos de código 
+	y desensamblarlo, y con suficiente experiencia modificar un programa ya compilado, sin el fuente (que es lo que se hace 
+	para desarrollar cracks, por ejemplo, que es ilícito pero notablemente didáctico).</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">La desventaja es que exige un trabajo mucho mayor que otros lenguajes. Para hacer algo sencillo 
+	tienes que dedicar mucho más tiempo, porque le tienes que especificar al procesador paso por paso lo que debe hacer.
+	En un lenguaje de más alto nivel como C, y no digamos ya Java o C++, los programas se hacen en mucho menos
+	tiempo, y a menudo con un rendimiento similar (bueno, en Java no, desde luego). Además, cada procesador tiene su 
+	propio juego de instrucciones, y en consecuencia propio código máquina y propio lenguaje ensamblador (lo que en el
+	caso que trataremos nosotros no supone demasiado problema porque un altísimo porcentaje del código será común a 
+	todos los procesadores de la familia, con	pequeñas diferencias en los "extras"). Sin embargo, pese a todo ello, 
+	será interesante programar fragmentos de código en ensamblador para hacer nuestra aplicación más eficaz; y aun cuando 
+	esto no sea necesario, conocer ensamblador significa conocer el procesador que estamos usando, y con este conocimiento 
+	seremos capaces de sacar mucho más partido a los lenguajes de alto nivel, programar más eficientemente e identificar 
+	determinados errores con mayor facilidad. Sabremos incluso modificar el ensamblador generado por el compilador, antes 
+	de ser convertido definitivamente a código máquina, para optimizar nuestros programas (aunque he de reconocer que hay 
+	compiladores que hacen por sí solos un trabajo difícilmente superable). Y, por supuesto, y como siempre digo, está el
+	placer de hacer las cosas uno mismo. Como habrás podido imaginar, el que escribe estas líneas es un entusiasta
+	de la programación en ensamblador; soy, sin embargo, el primero en admitir sus limitaciones, pero no me tomaría en 
+	serio a ningún programador, aficionado o profesional, que dijera abiertamente que saber ensamblador no sirve de nada.
+	Creo que para programar <i>bien</i> hay que, al menos, conocer el lenguaje ensamblador de <i>algún</i> 
+	microprocesador (aunque no sea el que se vaya a usar).</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Más allá del romanticismo, o del conocimiento del funcionamiento del microprocesador como base para
+	comprender otros lenguajes, la discusión más cabal sobre el uso práctico del ensamblador con la que me he topado 
+	es sin duda la que se encuentra en el <i>Assembly-Howto</i> por Konstantin Boldyshev y Francois-Rene Rideau, en su 
+	apartado "Do you need assembly?". En este documento encontrará el lector una argumentación bastante equilibrada a este
+	respecto, así como temas tan útiles como la sintaxis de otros ensambladores distintos de NASM, interacción con otros 
+	lenguajes, macros..</font></p>
+
+<font face="Arial" size="2">	</font><p align="right"><font face="Arial" size="2"><a href="http://www.rinconsolidario.org/eps/asm8086/asm.html">Regresar al índice</a></font></p>
+<font face="Arial" size="2">	</font>
+
+</body></html>

@@ -1,0 +1,197 @@
+<html><head><title>CURSO DE ENSAMBLADOR: DIRECTIVAS EN NASM</title></head>
+
+<body>
+
+<p align="center"><font face="Arial" size="3"><b>CAPITULO V. DIRECTIVAS Y MÁS DIRECTIVAS.</b></font></p>
+
+	<font face="Arial" size="2">
+	
+	</font><p align="justify"><font face="Arial" size="2">Conocer las directivas que acepta nuestro ensamblador simplifica mucho el trabajo, 
+	pero a fin de no hacer esto soporífero (aunque creo que ya es demasiado tarde) sólo 
+	incluiré las típicas. También hay que tener en cuenta que esta parte puede cambiar
+	bastante de un ensamblador a otro. NASM presenta una sintaxis semejante (aunque con importantes
+	diferencias) a TASM o MASM, ensambladores de Borland y Microsoft respectivamente, para MSDOS/Windows.
+	GASM (GNU Assembler, también con un nutrido grupo de adeptos), por otra parte, emplea una notación bien 
+	distinta (y en muchos casos <i>odiada</i> por los que no la usamos), conocida como AT&amp;T. Con esto digo 
+	que aunque las instrucciones sean las mismas, puede cambiar mucho la manera de escribirlas.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Y quizá sea esta la parte más ingrata del ensamblador, pero bueno, la ventaja es que muy fácil,
+	y no hace falta conocer todas las directivas para realizar un código eficiente.. Simplemente
+	nos harán la vida más fácil. Empecemos.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Cada línea de ensamblador tiene (salvando las excepciones de las macros y cosas similares)
+	la misma pinta:</font></p>
+
+<font face="Arial" size="2">	</font><p align="center"><font face="Arial" size="2">etiqueta: instruccion operandos ;comentario</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Todos los campos son optativos (menos, evidentemente, cuando la instrucción requiera
+	operandos); así pues es posible definir etiquetas en cualquier sitio, o simplemente colocar un
+	comentario. Si la línea fuese demasiado larga y quisiéramos partirla en varias (cosa un tanto rara, pero
+	que viene bien saber), se puede usar el carácter '\'. Si la línea termina en \, se colocará la
+	siguiente a continuación.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">El ensamblador admite operadores de multiplicación, suma, resta, paréntesis.. Cuando 
+	toca ensamblar, él solito opera y sustituye. Por ejemplo:</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">MOV AX,2*(2+4)</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">es exactamente lo mismo que</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">MOV AX,12</font></p>
+
+<li><font face="Arial" size="2"><b>Definición de datos</b></font></li>
+<p align="justify"><font face="Arial" size="2">Las directivas básicas para definir datos son las siguientes:
+	<li><b>DB</b> Define Byte, 1 byte
+	</li><li><b>DW</b> Define Word, 2 bytes
+	</li><li><b>DD</b> Define Double Word (4 bytes)
+	</li><li><b>DQ</b> Define Quad Word (8 bytes)
+	</li><li><b>DT</b> Define Ten Bytes (10 bytes; aunque parezca muy raro, cuando veas
+				 el coprocesador no podrás vivir sin ella)
+</li></font></p>
+
+<p align="justify"><font face="Arial" size="2"><br>Ejemplos:<br>
+	<table>
+	<tbody>
+	<tr><td><font face="Arial" size="2">db 'Soy una cadena'</font></td>
+	    <td><font face="Arial" size="2">;es cierto, es una cadena</font></td></tr>
+	<tr><td><font face="Arial" size="2">dw 12,1</font></td>
+	    <td><font face="Arial" size="2">;0C00h 0100h (ordenación Intel, no se te olvide)</font></td></tr>
+	<tr><td><font face="Arial" size="2">dt 3.14159265359</font></td>
+	    <td><font face="Arial" size="2">;representación en coma flotante de 10 bytes PI</font></td></tr>
+	</tbody>
+	</table>
+</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Lo de definir números reales se puede hacer con DD (precisión simple, 32 bits), DQ
+	(precisión doble, 64 bits) y DT (a veces llamado real temporal, una precisión de la leche, 80 bits; uno para 
+	el signo, 64 para la mantisa y 15 para el exponente o_O'). Los caracteres ascii van entrecomillados
+	con ''; cuando el ensamblador encuentre un caracter entre comillas simples lo sustituye por el valor
+	numérico del código ascii correspondiente.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Para reservar zonas amplias de memoria se emplean <b>RESB</b> y familia, que
+	lo que hacen es dejar hueco para N bytes, palabras (<b>RESW</b>), palabras dobles (<b>RESD</b>),
+	palabras cuádruples (<b>RESQ</b>) o bloques de 10 bytes (<b>REST</b>).
+	</font></p>
+
+<font face="Arial" size="2">	<table>
+	<tbody>
+	<tr><td><font face="Arial" size="2">resb 10</font></td>
+	    <td><font face="Arial" size="2">;deja un hueco de 10 bytes sin inicializar</font></td></tr>
+	<tr><td><font face="Arial" size="2">resq 4*4 <b>DUP</b> (1)</font></td>
+	    <td><font face="Arial" size="2">;espacio para una matriz 4x4 (16 reales de precisión doble)</font></td></tr>
+	</tbody>
+	</table><br>
+
+	</font><p align="justify"><font face="Arial" size="2">Una directiva muy peculiar, de uso muy esporádico pero muy interesante, es <b>INCBIN</b>;
+	lo que hace es incluir dentro del código el contenido binario de un archivo dado. Puede ser útil, por
+	ejemplo, para incrustar pequeñas imágenes o logotipos dentro del ejecutable:</font></p>
+
+<font face="Arial" size="2">	<table>
+	<tbody>
+	<tr><td><font face="Arial" size="2">incbin "datos.dat"</font></td>
+	    <td><font face="Arial" size="2">;ensambla introduciendo datos.dat en este punto</font></td></tr>
+	<tr><td><font face="Arial" size="2">incbin "datos.dat",100</font></td>
+	    <td><font face="Arial" size="2">;incluye datos.dat, excepto los primeros 100 bytes</font></td></tr>
+	<tr><td><font face="Arial" size="2">incbin "datos.dat",100,200</font></td>
+	    <td><font face="Arial" size="2">;incluye los 200 bytes siguientes a los 100 primeros de datos.dat</font></td></tr>
+	</tbody>
+	</table><br>
+
+	</font><p align="justify"></p><li><font face="Arial" size="2"><b>ORG</b></font></li><font face="Arial" size="2"> ORG es una directiva con la que hay que tener especial cuidado, pues en otros 
+	ensambladores puede tener un efecto distinto. En <i>nasm</i> solamente influye en los offsets de las etiquetas e 
+	instrucciones que se refieran a direcciones. Es decir, colocar un org 100h no genera un hueco de 256 bytes donde 
+	empieza a colocarnos nuestro programa; simplemente hace que las referencias a offsets se realicen según este 
+	desplazamiento inicial. Si ensamblamos el programa "COM" del tema anterior, vemos que no ocupa 256 bytes + el 
+	programa propiamente dicho; simplemente el programa está <i>preparado</i> para que cuando se copie en memoria a 
+	partir de un offset de 256 bytes las direcciones sean correctas.</font><p></p>
+<font face="Arial" size="2">	</font><p><font face="Arial" size="2">El uso es tan simple como <b>org <i>numero_de_bytes<i></i></i></b></font></p>
+
+<font face="Arial" size="2"><i><i>	</i></i></font><p align="justify"></p><li><font face="Arial" size="2"><i><i><b>EQU</b></i></i></font></li><font face="Arial" size="2"><i><i> Equivalencia. El ensamblador sustituye en todo el fuente la palabra 
+	indicada por la expresión que sigue a equ. Muy apropiada cuando tenemos que usar una constante
+	en varios puntos del código, pues nos ahorra buscar las referencias por todo el fuente cada
+	vez que cambiemos de idea y la asignemos otro valor.</i></i></font><p></p>
+
+<font face="Arial" size="2"><i><i>	</i></i></font><p align="justify"><font face="Arial" size="2"><i><i>Siglo <b>equ</b> 21<br> MOV AX,Siglo ;AX ahora vale 21</i></i></font></p>
+
+<p align="justify"></p><li><font face="Arial" size="2"><i><i><b>Procesadores/Coprocesadores: 'CPU'</b></i></i></font></li>
+<font face="Arial" size="2"><i><i>	La directiva <b>CPU</b> determina el tipo de procesador que vamos a emplear. En general
+	no será importante pues todos comparten el juego de instrucciones básico, pero si quisiéramos programar
+	en un procesador más <i>limitado</i> (pongamos un 286), y por un casual, intentásemos usar una instrucción
+	mínimamente moderna (digamos alguna MMX), el ensamblador nos daría un error. Algunas CPU's (se puede
+	especificar más):</i></i></font><p></p>
+<font face="Arial" size="2"><i><i>	</i></i></font><p><font face="Arial" size="2"><i><i>cpu 8086<br>cpu 186<br>cpu 286<br>cpu 386<br>cpu 486<br>cpu 586<br>cpu 686<br>cpu IA64</i></i></font></p><p>
+<font face="Arial" size="2"><i><i>	</i></i></font></p><p align="justify"><font face="Arial" size="2"><i><i>Si no se selecciona ninguna, por defecto se admiten todas las instrucciones.</i></i></font></p>
+
+<p></p><li><font face="Arial" size="2"><i><i><b>%include</b> archivo</i></i></font></li>
+<font face="Arial" size="2"><i><i>	Sustituye la directiva por el contenido del archivo (a la manera del #include de c)</i></i></font><p></p>
+<font face="Arial" size="2"><i><i>	
+</i></i></font><p align="justify"></p><li><font face="Arial" size="2"><i><i><b>%define</b></i></i></font></li>
+<font face="Arial" size="2"><i><i>	Definición de una macro de una sola línea. Cuando el ensamblador encuentra una referencia 
+	a una macro, la sustituye por su definción, incluyendo los argumentos si los hubiera. Por ejemplo</i></i></font><p></p>
+
+<font face="Arial" size="2"><i><i>	</i></i></font><p><font face="Arial" size="2"><i><i>%define h2(a,b) ((a*a)+(b*b))<br>
+	mov ax,h2(2,3)<br><br>
+	es equivalente a<br><br>
+	mov ax,(2*2)+(3*3)<br><br>
+	es decir<br><br>
+	mov ax,13</i></i></font></p>
+
+<p align="justify"></p><li><font face="Arial" size="2"><i><i><b>%macro</b></i></i></font></li><font face="Arial" size="2"><i><i>Definición de una macro. El funcionamiento es similar, sólo que para fragmentos de 
+	código:<br><br>
+	<i>%macro</i> nom_macro num_arg<br>
+	......<br>
+	<i>%endmacro</i><br></i></i></font><p></p>
+
+<font face="Arial" size="2"><i><i>	</i></i></font><p align="justify"><font face="Arial" size="2"><i><i>En los ejemplos del tema anterior vimos las llamadas al sistema para mostrar una cadena
+	en pantalla. Si tuviéramos que repetir esa llamada varias veces, sería más cómodo y legible usar una macro
+	como la siguiente:<br><br>
+	
+	<i>%macro</i> imprime 2<br>
+	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;mov edx,%1<br>
+	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;mov ecx,%2<br>
+	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;mov ebx,1<br>
+	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;mov eax,4<br>
+	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int 80h<br>
+	<i>%endmacro</i><br><br>
+
+	con lo que cada vez que cada vez que quisiéramos imprimir una cadena sólo tendríamos que escribir<br><br>
+	<i>imprime longitud,cadena</i></i></i></font></p>
+<font face="Arial" size="2"><i><i>	
+	</i></i></font><p align="justify"><font face="Arial" size="2"><i><i>Aunque es tentador hacerlo, no hay que abusar de las macros porque el código engorda que 
+	da gusto. Las macros son más rápidas que las subrutinas (pues ahorran dos saltos, uno de
+	ida y uno de vuelta, más los tejemanejes de la pila), pero a menudo no compensa por muy
+	bonitas que parezcan: el que la pantalla de bienvenida de un programa cargue un par de
+	milisegundos antes o después no se nota. Claro que ahora la memoria es cada vez menos 
+	problema... En cualquier caso, su uso es deseable siempre que se favorezca la legibilidad
+	del código.</i></i></font></p>
+<font face="Arial" size="2"><i><i>	
+	</i></i></font><p align="justify"><font face="Arial" size="2"><i><i>Una aplicación que da idea de la potencia de las macros es la de emplear macros
+	con el nombre de instrucciones. Es así posible definir una macro llamada <i>push</i> que reciba
+	dos argumentos, por ejemplo, y que ejecute las instrucciones <i>push %1</i> y <i>push %2</i>.
+	Cuando se escriba <i>push eax</i>, al recibir un número de argumentos distintos a los de la
+	definición de la macro, sabrá que se refiere a una instrucción (aunque dará un <i>warning</i> por
+	ello), mientras que al escribir <i>push eax,ebx</i> desarrollará la macro como <i>push eax</i>
+	seguido de <i>push ebx</i>.
+
+	</i></i></font></p><p align="justify"><font face="Arial" size="2"><i><i>Para especificar que una etiqueta dentro de la macro es local (a fin de que
+	no se duplique la etiqueta al usar dos veces la misma macro), hay que poner %% justo delante
+	de la etiqueta.</i></i></font></p>
+
+<font face="Arial" size="2"><i><i>	</i></i></font><p align="justify"><font face="Arial" size="2"><i><i>%macro macroboba 0<br>
+	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;%%EtiquetaInutil:<br>
+	%endmacro</i></i></font></p>
+
+<font face="Arial" size="2"><i><i>	</i></i></font><p align="justify"><font face="Arial" size="2"><i><i>Si llamamos a esta macro varias veces, cada vez que se la llame usará un nombre 
+	distinto para la etiqueta (pero igual en toda la macro, claro).</i></i></font></p>
+
+<font face="Arial" size="2"><i><i>	</i></i></font><p align="justify"><font face="Arial" size="2"><i><i>...y eso es todo en cuanto a directivas. Hay muchas más. Existen deficiones 
+	de condicionales para que ensamble unas partes de código u otras en función de variables 
+	que definamos con EQU, comparadores, operadores lógicos.. Son de uso muy sencillo todas ellas,
+	por lo que basta con echar un ojo de vez en cuando a la documentación del ensamblador para
+	tenerlas presentes.</i></i></font></p>
+
+<font face="Arial" size="2"><i><i>	</i></i></font><p align="right"><font face="Arial" size="2"><i><i><a href="http://www.rinconsolidario.org/eps/asm8086/asm.html">Regresar al índice</a></i></i></font></p><p align="justify">
+
+
+
+</p></body></html>

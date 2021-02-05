@@ -1,0 +1,163 @@
+<html><head><title>CURSO DE ENSAMBLADOR: INTERRUPCIONES</title></head>
+
+<body>
+
+<p align="center">
+<font face="Arial" size="3"><b>CAPÍTULO X: INTERRUPCIONES</b> (a vista de pájaro)</font></p>
+
+	<font face="Arial" size="2">
+
+	</font><p align="justify"><font face="Arial" size="2">La descripción que sigue corresponde al funcionamiento del procesador
+	en modo real. En modo protegido es algo más complejo, y además como lo normal es que
+	no tengamos privilegios para gestionar interrupciones en un sistema de este
+	tipo, no es tan importante.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">El procesador está conectado con multitud de dispositivos externos como
+	el controlador del teclado, discos, el ratón, etc. Sin embargo lo que no puede (o no debe)
+	hacer es mirar periódicamente si cada dispositivo necesita que le envíen datos o tiene
+	un dato por recoger, ya que perdería tiempo inútilmente. En su lugar la mayor parte de
+	estos aparatos disponen de un mecanismo para avisar al micro de que se requiere su 
+	atención, conocido como <i>interrupciones hardware</i> (para no confundirse con las
+	llamadas con "INT" que son conocidas como <i>interrupciones software</i>), o simplemente 
+	interrupciones. Así el procesador sólo atiende al dispositivo cuando necesita algo.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Cuando ocurre una interrupción hardware el curso del programa puede desviarse 
+	a atender dicha interrupción. Entre instrucción e instrucción el micro comprueba si hay alguna
+	interrupción pendiente; si es así empuja el registro de flags en la pila, y a continuación 
+	CS e IP. Carga entonces CS:IP con la dirección de la <i>rutina de atención a la interrupción</i>
+	(a menudo ISR de <i>Interruption Service Routine</i>). Ésta rutina contiene el código necesario
+	para atender al dispositivo que provocó la interrupción. Cuando la rutina termina vuelve 
+	al punto desde donde saltó mediante IRET, que recupera CS:IP y el registro de flags de 
+	la pila. De este modo cuando la interrupción salta en medio de un programa, el 
+	funcionamiento de éste no se ve alterado (salvo en que se detiene momentáneamente).</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Cada interrupción tiene asignada un número del 0 al 255 que la identifica. En el
+	8086 la dirección de cada ISR se encuentra en la <i>tabla de vectores de interrupción</i>,
+	ubicada en el primer kbyte de la memoria RAM; esta tabla contiene 256 punteros de 4 bytes 
+	(offset + segmento), colocados en orden según el código de interrupción asociado a cada 
+	uno. Cuando salta la interrupción X, se lee el puntero en la posición de memoria 4*X.
+
+	</font></p><p align="justify"><font face="Arial" size="2">En modo protegido tenemos en lugar de esta tabla otra más sofisticada
+	llamada IDT (<i>Interrupt Descriptor Table</i>), donde además de la dirección de salto 
+	se controlan otros parámetros propios de este modo de funcionamiento. La estructura exacta
+	sólo es de interés para el programador de sistemas, pues corresponde a un área de memoria
+	protegida (sólo el sistema operativo tiene acceso a ella).</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">El flag de interrupciones determina cuándo y cuándo no se aceptan interrupciones.
+	El bit a 1 las permite, a 0 las inhibe. Manipular este bit es fundamental en operaciones
+	especialmente delicadas, como modificar la rutina de atención a la interrupción. Supongamos
+	que estamos en MSDOS y queremos hacer un programa que se active por las interrupciones del
+	timer del sistema, que las genera automáticamente cada 55 milisegundos. Tendríamos que
+	leer la tabla de vectores de interrupción, guardar en algún otro sitio el puntero
+	que se encuentra en la posición de la interrupción buscada, y escribir en su lugar la
+	posición de memoria donde se ubica nuestro programa. Luego tendríamos que procurar que
+	al finalizar la ejecución de nuestra rutina, el código saltara a la dirección que hubiera
+	previamente en la tabla en lugar de regresar con IRET, para no alterar el funcionamiento del 
+	sistema (así tanto nuestra rutina como la anterior saltarían cada 55 milisegundos). El problema 
+	es que podría suceder, oh casualidad de las casualidades, que justo cuandos hubiéramos escrito el 
+	valor del segmento en la tabla, y fuéramos a escribir el del offset, saltara la interrupción. Es 
+	altamente	improbable, pero posible. Hay que inhibir las interrupciones. Para ello tenemos las 
+	instrucciones <b>STI</b> (SeT Interruption flag) y <b>CLI</b> (CLear Interruption flag), que 
+	ponen a uno y a cero respectivamente el flag de interrupciones.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Una situación donde se detienen las interrupciones automáticamente se da
+	cuando escribimos algo en el registro de segmento de pila (SS). Como ya se vio y
+	probablemente no se recuerde, cuando se mueve un valor a SS se inhiben las
+	interrupciones hasta que se ejecuta la instrucción siguiente. De este modo si justo
+	detrás del MOV a SS hacemos un MOV a SP no hay posibilidad de que salte una interrupción
+	entre ambas. Hay tener siempre una zona válida para la pila porque las interrupciones
+	pueden aparecer en cualquier momento, y por tanto bloquearlas mientras no sea así.
+
+	</font></p><p align="justify"><font face="Arial" size="2">Toda interrupción que salte justo después de modificar SS, o mientras IF 
+	valga 0, queda en suspenso hasta que pase esta circunstancia, de modo que no se pierde; tan
+	pronto vuelven a estar disponibles las interrupciones, son atendidas. Si hubiera varias
+	esperando, se atenderían en orden de prioridad de acuerdo con el número de interrupción.</font></p>
+<font face="Arial" size="2">	
+	</font><p align="justify"><font face="Arial" size="2">De entre todas las interrupciones hardware hay un tipo especial llamado NMI o 
+	interrupción no enmascarable (<i>non maskable interrupt</i>), que se atiende siempre que
+	se produce, sea cual sea el estado del procesador. Normalmente son fallos críticos
+	del sistema como errores físicos del hardware, donde lo mejor que se puede hacer
+	es intentar salvar datos y colocar bien visible para el usuario un letrero de
+	cerrado por defunción (es posible -aunque no siempre ocurra- que sea irrecuperable y 
+	requiera, como poco, reiniciar el equipo).</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Existe otro tipo de interrupciones que son ocasionadas por el código,
+	y no hardware externo, pero que funcionan de manera idéntica; las <i>interrupciones software</i>.
+	Para llamar a una interrupción determinada usamos la instrucción <b>INT</b>. En
+	la tabla de vectores de interrupción se encuentran las direcciones de gran cantidad de 
+	funciones proporcionadas por el sistema operativo y la BIOS, a las cuales podemos
+	llamar mediante esta instrucción.  Cuando se habla exclusivamente del sistema operativo
+	suelen conocerse por <i>llamadas al sistema</i>, siendo el medio para solicitar todo tipo
+	de servicios; manejar archivos, reservar memoria, finalizar la ejecución, 
+	interaccionar con el teclado/pantalla.. Algo de esto ya se explicó en el capítulo VI,
+	en el apartado de esta misma instrucción.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Cuando el micro lee una instrucción INT se comporta igual que con
+	cualquier interrupción, en tanto que empuja el registro de flags y la dirección de 
+	retorno en la pila y salta según el vector de interrupción designado, volviendo luego 
+	mediante un IRET. Es posible además mediante INT forzar una interrupción que en principio 
+	estaba asociada a un  evento hardware, pero no es demasiado recomendable.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Se puede en MSDOS escribir en la tabla de vectores de interrupción y 
+	colocar ahí la dirección de un programa residente, que es lo que hace un driver. El
+	ratón, por ejemplo, siempre se ha asociado a la INT 33h. Si uno quiere leer el estado del 
+	ratón, pasa los argumentos necesarios (generalmente en los registros) a la ISR, llama a 
+	la INT 33h y lo realiza. Cada fabricante de ratones habrá programado <i>su</i> driver 
+	para que interaccione con <i>su</i> ratón tal que responda igual que el resto de ratones 
+	a esa función. Así el programador tiene garantizado que el programa que haga que
+	maneje el ratón con esa interrupción funcione en cualquier equipo. (Se dice que se
+	accede al dispositivo desde un mayor <i>nivel de abstracción</i>, pues es en este caso 
+	el control es independiente del ratón en particular que se use. Cuanto mayor es el
+	nivel de abstracción de un componente, habitualmente menor es la eficiencia, a cambio
+	de facilidad de uso, seguridad y compatibilidad. Es una filosofía masivamente extendida
+	en los sistemas operativos actuales)</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Esto de echarle el guante a los vectores de interrupción con tanta facilidad con el
+	MSDOS hacía que fuera muy fácil programar un virus (y uno increíblemente pequeño además). 
+	Supongamos que tenemos un ejecutable infectado, que lo que hace es nada más arrancar 
+	cargar el virus, y luego ejecutar el código del programa normalmente. El hipotético 
+	virus comprueba cuando se ejecuta si ya ha infectado el sistema, y si no es así carga 
+	su código en memoria de manera residente (permanece en una parte de la memoria incluso 
+	tras haber terminado la ejecución del programa infectado). Sobreescribe a continuación 
+	el vector de interrupción que más le interese, que será la que active determinadas 
+	funciones del virus. Podemos hacer, por ejemplo, que cada vez que se ejecute un
+	programa éste quede infectado (cosa bastante típica) pues para ello se llaman a servicios
+	del sistema operativo (uno dice "quiero ejecutar este programa", y el virus dice "vale,
+	pero espera que primero le añado mi nota de pie de pagina"). También podemos activar el virus 
+	con el timer del ordenador, y que compruebe la fecha y hora continuamente tal que en un determinado momento
+	actúe (no va a ser todo multiplicarse..), haciendo la perrería que su diseñador haya
+	pensado. Simplemente habría que hacer un residente en memoria, sobreescribir el
+	vector de interrupción deseado con la dirección de nuestro código, y que cuando terminase
+	su ejecución en vez de regresar con IRET saltara a la dirección antigua del vector
+	de interrupción (para que esa interrupción haga, además, lo que debe hacer). Como el 
+	modo real carece de medios para impedir que un programa acceda a cualquier posición de 
+	memoria, siempre será posible infectar un sistema...</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">En sistemas de 32 bits la cosa se vuelve mucho más fastidiada, y más en sistemas
+	multiusuario (Linux, Windows 2000/XP) donde los permisos al usuario se dan con 
+	cuentagotas. Cuando se ejecuta un programa se le asigna una región de memoria de la que
+	no puede salir, pues en cuanto lo intenta hay un circuito que provoca una interrupción
+	que cede el control al sistema operativo. Todo ello cortesía del Señor Modo Protegido.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Como tercer tipo de interrupciones tenemos las denominadas <i>excepciones</i> 
+	(realmente hay quien distingue interrupciones y excepciones como cosas distintas, pero vienen a ser
+	cosas muy similares). Éstas son interrupciones producidas por el código, al igual que las anteriores,
+	pero en respuesta a la ejecución de una instrucción. Por ejemplo, si el procesador se encontrase con
+	que el código de operación que ha leído no corresponde con ninguna instrucción máquina (porque a
+	lo mejor esa instrucción es propia de otro procesador y él no es capaz de interpretarla), se produciría
+	una excepción de <i>código de operación no válido</i>, y saltaría la rutina que gestionaría este
+	hecho. Otras excepciones frecuentes son las de fallo de página (cuando se usa memoria virtual, el
+	procesador va a buscar un dato a memoria y no lo encuentra; tiene que ir antes al disco duro a recogerlo),
+	de fallo de protección general (cuando se realiza una operación privilegiada sin estar autorizado)...</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">En la sección de enlaces del final se incluye un ZIP con un archivo de ayuda 
+	para Windows que comprende una referencia bastante completa de las interrupciones del sistema,
+	tanto hardware como software (cubriendo los servicios del MSDOS, la BIOS y numerosos
+	controladores típicos bajo este sistema operativo). Una fuente mucho más completa
+	es la documentación de Ralph Brown que incluye descripciones de puertos, pinout de
+	componentes, especificaciones hardware... Abrumadoramente extensa, pero muy muy
+	recomendable.</font></p>
+<font face="Arial" size="2">	
+	</font><p align="right"><font face="Arial" size="2"><a href="http://www.rinconsolidario.org/eps/asm8086/asm.html">Regresar al índice</a></font></p><p align="justify">
+
+</p></body></html>

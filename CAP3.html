@@ -1,0 +1,231 @@
+<html><head><title>CURSO DE ENSAMBLADOR: MODOS DE DIRECCIONAMIENTO</title></head>
+
+<body>
+
+<p align="center"><font face="Arial" size="3"><b>CAPITULO III. EL MOVIMIENTO SE DEMUESTRA MOVIENDO.</b>
+<br>La instrucción MOV y los modos de direccionamiento.</font></p>
+
+	<font face="Arial" size="2">
+	</font><p align="justify"><font face="Arial" size="2">He aquí nuestra primera instrucción:</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">MOV destino,origen</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Efectivamente, sirve para mover. Lo que hace es copiar lo que haya en "origen" en
+	"destino". Lo de que primero vaya el destino y luego el origen es común a todas las 
+	instrucciones del 8086 que tengan dos operandos, lo cual creará más de un quebradero de 
+	cabeza al principio. Existen no obstante algunos ensambladores que en su sintaxis 
+	intercambian los operandos, pues realmente no es necesario emplear los mnemónicos en
+	ese orden mientras el código de operación sea el correcto. No hace falta decir (bueno, 
+	por si acaso lo digo) que destino y origen tienen que tener el mismo tamaño; así</font></p>
+<font face="Arial" size="2">		
+	</font><p align="justify"><font face="Arial" size="2">MOV AX,BL</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">haría pitar al ensamblador como loco, y con toda la razón. Si intentamos
+	copiar BL (parte baja de BX, de tamaño 8 bits) en AX (registro de 16 bits), el ensamblador
+	nos dirá que eso no se puede, y que no existe ningún código de operación para eso.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">MOV AX,BX sin embargo hace que el procesador coja el contenido de BX y
+	lo copiara en AX; lo que había anteriormente en AX se pierde (puesto que un registro al
+	fin y al cabo es un número, en este caso de 16 bits, y ahora le hemos asignado un nuevo
+	valor), mientras que BX no se ve afectado. Cuando decimos "mover" en realidad sería más
+	apropiado "copiar", porque no alteramos en absoluto el operando origen. Esta instrucción
+	no sólo nos permite mover datos entre registros, sino que podemos mover valores concretos,
+	especificados en la propia instrucción. Por ejemplo, si quisiéramos poner a 0 el registro DX 
+	podríamos poner</font></p>
+<font face="Arial" size="2">	
+	</font><p align="justify"><font face="Arial" size="2">MOV DX,0</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">muy distinto de</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">MOV DX,[0]</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Los corchetes significan "lo que haya en la dirección..". En este caso el micro 
+	cogería la palabra (16 bits, pues es el tamaño del operando destino, así que queda 
+	implícito) que estuviera en la dirección 0 y la copiaría en DX. Más aún. No se 
+	trata de la dirección 0 sino del offset 0; ¿de qué segmento? DS, que es el registro 
+	de segmento por defecto. Cuando en una operación de este tipo no especificamos segmento,
+	el procesador coge el valor que haya en DS y lo usa como segmento para formar la dirección
+	completa. Si quisiéramos copiar a DX la primera pareja de bytes del 
+	segmento apuntado por ES, porque es allí donde tenemos el dato, tendríamos que poner 
+	un prefijo de segmento (o <i>segment override</i>, para los guiris):</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">MOV DX,[ES:0]</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Esto va al segmento ES, se desplaza 0 bytes, coge los primeros 2 bytes a partir de 
+	esa dirección y los guarda en DX. ¿Complicado? Pues no hemos hecho más que empezar. Si en este momento 
+	andas un poco perdido, échale otro vistazo al capítulo anterior y lee esto otra vez con más calma, 
+	porque vamos a seguir añadiendo cosas.</font></p>
+
+<font face="Arial" size="2">	</font><p><font face="Arial" size="2">Se llama "modo de direccionamiento" a una forma de especificarle una dirección al micro para que acceda
+	a algún dato, como cuando hemos dicho MOV DX,[ES:0]. Decirle al procesador directamente la dirección,
+	en este caso offset 0, es efectivamente un modo de direccionamiento, aunque no demasiado flexible,
+	porque debemos saber la posición exacta del dato en el momento de hacer el programa. Veamos todos los modos de 
+	direccionamiento que permite este micro, sin más que poner el offset dentro de []:</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify">
+<font face="Arial" size="2">        <table border="2">
+        <tbody align="center">
+        	<tr><th><font face="Arial" size="2">Nombre</font></th>
+	        <th><font face="Arial" size="2">Offset</font></th>
+            	<th><font face="Arial" size="2">Segmento por defecto</font></th></tr>
+		
+		<tr><td><font face="Arial" size="2"><i>Absoluto</i></font></td>
+	        <td><font face="Arial" size="2">Valor inmediato</font></td>
+            	<td><font face="Arial" size="2">DS</font></td></tr>
+
+		<tr><td><font face="Arial" size="2"><i>Indirecto con base</i></font></td>
+	        <td><font face="Arial" size="2">BX+x</font></td>
+            	<td><font face="Arial" size="2">DS</font></td></tr>
+		<tr><td></td>
+	        <td><font face="Arial" size="2">BP+x</font>
+            	</td><td><font face="Arial" size="2">SS</font></td></tr>
+
+		<tr><td><font face="Arial" size="2"><i>Indirecto con índice</i></font></td>
+	        <td><font face="Arial" size="2">DI+x</font></td>
+            	<td><font face="Arial" size="2">DS</font></td></tr>
+		<tr><td></td>
+	        <td><font face="Arial" size="2">SI+x</font>
+            	</td><td><font face="Arial" size="2">DS</font></td></tr>
+
+		<tr><td><font face="Arial" size="2"><i>Ind. con base e índice</i></font></td>
+	        <td><font face="Arial" size="2">BX+DI+x</font></td>
+            	<td><font face="Arial" size="2">DS</font></td></tr>
+		<tr><td></td>
+	        <td><font face="Arial" size="2">BX+SI+x</font>
+            	</td><td><font face="Arial" size="2">DS</font></td></tr>
+		<tr><td></td>
+	        <td><font face="Arial" size="2">BP+DI+x</font>
+            	</td><td><font face="Arial" size="2">SS</font></td></tr>
+		<tr><td></td>
+	        <td><font face="Arial" size="2">BP+SI+x</font>
+            	</td><td><font face="Arial" size="2">SS</font></td></tr>
+	</tbody>
+	</table>
+	</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Por x queremos decir un número en complemento a dos de 8 o 16 bits, es decir, los
+	comprendidos entre -128 y 127 o -32768 y 32767.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Supongamos que tenemos una cadena de caracteres en el segmento indicado por ES, offset 100h, 
+	y queremos mover un carácter cuya posición viene indicada por el registro BP, a AL. 
+	El offset del carácter sería BP+100h; como el segmento por defecto para ese modo 
+	de direccionamiento es SS, es necesario un prefijo de segmento. La instrucción sería:</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">MOV AL,[ES:BP+100h]</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Observando un poco la tabla podemos darnos cuenta de que todos emplean por defecto el
+	registro de segmento DS excepto los que usan BP, que se refieren a SS. En general no
+	es buena idea usar prefijos de segmento, pues las instrucciones que los usan se codifican
+	en más bytes y por tanto son más lentas. Así si hemos de referirnos a DS usaremos
+	otros registros distintos de BP siempre que sea posible.</font></p>
+<font face="Arial" size="2">	
+	</font><p align="justify"><font face="Arial" size="2">El llamado prefijo de segmento es estrictamente hablando un prefijo,
+	pues se codifica como tal, precediendo a la instrucción a la que afecta (un byte extra).
+	En NASM es posible seguir literalmente esta construcción, pudiendo escribir la
+	expresión anterior como</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">ES<br>MOV AL,[BP+100h]</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Comprendidos bien los modos de direccionamiento del 8086, voy a añadir algunos más:
+	los que permiten los 386+. Cuando se emplean en direccionamientos indirectos
+	registros de 32 bits es posible usar cualquiera de ellos. Así "MOV EAX,[ECX]" sería 
+	perfectamente válido. Y más aún (y esto es muy importante para manipular arrays de 
+	elementos mayores que un byte), el registro "índice" puede ir multiplicado por 2,4 u 8
+	si de desea: es posible realizar operaciones del tipo "MOV CL,[EBX+EDX*8]". Al que todo
+	esto le parezca pequeños detallitos en vez de potentes modos de direccionamiento, que se
+	dedique a la calceta porque esto no es lo suyo; para manejar vectores de reales
+	es una ayuda importantísima.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">No hay que olvidar que aunque estemos usando registros de 32 bits, 
+	seguimos limitados a segmentos de 64k si programamos en MSDOS. Bajo esta circunstancia,
+	cuando se emplee un direccionamiento de este tipo hay que asegurarse de que la dirección 
+	efectiva (es decir, el resultado de la operación EBX+EDX*8, o lo que sea) no supera el 
+	valor 0FFFFh.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">La instrucción MOV tiene ciertas limitaciones. No admite cualquier pareja
+	de operandos. Sin embargo esto obedece a reglas muy sencillas:</font></p>
+
+<font face="Arial" size="2">	</font><ol><font face="Arial" size="2">	
+		<li>No se puede mover de memoria a memoria</li>
+		<li>No se pueden cargar registros de segmento en direccionamiento inmediato</li>
+		<li>No se puede mover a CS</li>
+	</font></ol>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Las dos primeras reglas obligan a pasar por un registro intermedio de datos en caso 
+	de tener que hacer esas operaciones. La tercera es bastante obvia, pues si se pudiera 
+	hacer eso estaríamos haciendo que el contador de instrucción apuntase a sabe Dios 
+	dónde.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Otra regla fundamental de otro tipo -y que también da sus dolores de cabeza- es que
+	cuando se mueven datos de o hacia memoria se sigue la "ordenación Intel", que no es más 
+	que una manera de tocar las narices: los datos se guardan al revés. Me explico. Si yo 
+	hiciera</font></p>
+<font face="Arial" size="2">	
+	</font><p align="justify"><font face="Arial" size="2">MOV AX,1234h<br>MOV [DS:0],AX</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">uno podría pensar que ahora la posición DS:0 contiene 12h y DS:1 34h. Pues no. Es 
+	exactamente al revés. Cuando se almacena algo en memoria, se copia a la posición 
+	señalada la parte baja y luego, en la posición siguiente, la parte alta. Lo gracioso del 
+	asunto (y más que nada porque si no fuera así Intel tocaría bastante más abajo de las 
+	narices) es que cuando se trae un dato de memoria a registros se repite la jugada, de tal 
+	manera que al repetir el movimiento en sentido contrario, tenga en el registro el mismo 
+	dato que tenía al principio. Pero la cosa no se detiene ahí. Tras</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">MOV EAX,12345678h<br>MOV [ES:0124h],EAX</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">la memoria contendría algo así como:</font></p>
+
+<font face="Arial" size="2">        <table border="1" cellpadding="3">
+        <tbody>
+        	<tr><th><font face="Arial" size="2">Segmento</font></th>
+	        <th><font face="Arial" size="2">Offset:</font></th>
+            	<th><font face="Arial" size="2">Contenido:</font></th></tr>
+		
+		<tr><td><font face="Arial" size="2">ES</font></td>
+	        <td><font face="Arial" size="2">0124h</font></td>
+            	<td><font face="Arial" size="2">78h</font></td></tr>
+		<tr><td></td>
+	        <td><font face="Arial" size="2">0125h</font></td>
+            	<td><font face="Arial" size="2">56h</font></td></tr>
+		<tr><td></td>
+	        <td><font face="Arial" size="2">0126h</font></td>
+            	<td><font face="Arial" size="2">34h</font></td></tr>
+		<tr><td></td>
+	        <td><font face="Arial" size="2">0127h</font></td>
+            	<td><font face="Arial" size="2">12h</font></td></tr>
+	</tbody>
+	</table>
+
+	</font><p align="justify"><font face="Arial" size="2">Vamos, que lo que digo para palabras lo digo para palabras dobles. ¿Divertido, eh?</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Uno se puede preguntar además: ¿por qué no hacer "MOV [ES:0124h],12345678h"? Se 
+	puede, claro, pero no así (bueno, en este caso concreto tal vez, pero como norma 
+	general, no). El ensamblador no puede saber el tamaño que tiene el operando inmediato, 
+	así que no sabe cuantos bytes tiene que escribir. Si tú haces "MOV AX,8", está bien claro que
+	tiene que meter un "8" en 16 bits, porque es el tamaño que tiene AX, pero cuando el destino
+	es una posición de memoria, no sabe si poner 08h, 0008h, 00000008h.. Hay que especificar si es un byte, 
+	un word, o double word con lo que se conocen como <i>typecast</i>:</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">MOV BYTE [DI],0h	;DI es un puntero a byte<br>
+	MOV WORD [DI],0	;	  puntero a word<br>
+	MOV DWORD [DI],0h	;	  puntero a double word</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Cada una de ellas pone a cero 1,2 ó 4 bytes a partir de la dirección 
+	apuntada por DS:DI. Una última nota a cuento de estas cosas. Si se especifica por ejemplo 
+	"MOV AX,[DS:0]" la instrucción se codificará sin el prefijo de segmento, pues no hace 
+	falta al ser el registro por defecto. Esto es común a todas las instrucciones que 
+	empleen este modo de direccionamiento, y aunque es raro indicar al ensamblador 
+	direcciones de memoria mediante valores inmediatos, conviene tenerlo en cuenta:
+	especificar un segmento que ya es el segmento por defecto para ese direccionamiento,
+	no altera la codificación final de la instrucción.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Y eso es todo en cuanto a direccionamientos. En mi humilde opinión esto forma parte de
+	lo más difícil del ensamblador, porque aunque, efectivamente, uno puede comprender cada ejemplo individual,
+	tener una visión general de todo lo que se puede hacer, qué usar en cada caso, y qué significa, ya
+	no queda tan claro. Si dominas esto, el concepto de segmentación, y cómo funciona la pila (que veremos
+	dentro de nada), no tendrás ningún problema para asimilar todo lo demás.</font></p>
+
+<font face="Arial" size="2">	</font><p align="right"><font face="Arial" size="2"><a href="http://www.rinconsolidario.org/eps/asm8086/asm.html">Regresar al índice</a></font></p><p align="justify">
+<font face="Arial" size="2">	</font>
+
+</p></body></html>

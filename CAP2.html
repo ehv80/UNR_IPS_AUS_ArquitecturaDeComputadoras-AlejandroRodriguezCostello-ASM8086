@@ -1,0 +1,364 @@
+<html><head><title>CURSO DE ENSAMBLADOR: LOS REGISTROS Y LA SEGMENTACIÓN EN MODO REAL</title></head>
+
+<body>
+
+<p align="center">
+<font face="Arial" size="3"><b>CAPÍTULO II: REPITE CONMIGO. TENGO UN 8086, TENGO 
+8086..</b></font></p>
+
+	<font face="Arial" size="2">
+	</font><p align="justify"><font face="Arial" size="2">Nada más empezar toca hacer un acto de fuerza de voluntad, por renunciar a
+	la mayor parte de nuestra memoria RAM, funciones MMX, direccionamiento de 32 bits..	
+	Lo primero que vamos a ver es una descripción de los registros del primer bicho de
+	la familia, el 8086 (aunque un 80286 es básicamente idéntico en este aspecto), pues 
+	Intel y los demás fabricantes han puesto cuidado en que todos ellos se puedan 
+	comportar como él. Es un micro de 16 bits, y como habrás adivinado sus registros 
+	son de 16 bits. Helos aquí:</font></p>
+
+<font face="Arial" size="2">        <table align="center" border="1" cellpadding="3">
+        <tbody>
+        <tr>
+		<th><font face="Arial" size="2">Registros de datos </font></th>
+          	<td><font face="Arial" size="2">AX</font></td>
+            	<td><font face="Arial" size="2">BX</font></td>
+            	<td><font face="Arial" size="2">CX</font></td>
+            	<td><font face="Arial" size="2">DX</font></td>
+	    	</tr>
+        <tr>
+            	<th><font face="Arial" size="2">Punteros de pila</font></th>
+            	<td><font face="Arial" size="2">SP</font></td>
+            	<td><font face="Arial" size="2">BP</font></td>
+		</tr>
+        <tr>
+		<th><font face="Arial" size="2">Registros índice</font></th>
+          	<td><font face="Arial" size="2">DI</font></td>
+            	<td><font face="Arial" size="2">SI</font></td>
+	    	</tr>
+        <tr>
+		<th><font face="Arial" size="2">Registros de segmento</font></th>
+          	<td><font face="Arial" size="2">CS</font></td>
+            	<td><font face="Arial" size="2">DS</font></td>
+            	<td><font face="Arial" size="2">ES</font></td>
+            	<td><font face="Arial" size="2">SS</font></td>
+	    	</tr>
+        <tr>
+		<th><font face="Arial" size="2">Registro de flags</font></th>
+	    	</tr>
+	</tbody></table>
+
+
+	</font><p align="justify"><font face="Arial" size="2">Los registros de datos, como su nombre indica, contienen <i>generalmente</i> datos.
+	(Sí, lo sé, no parecen gran cosa, pero es lo que hay) A veces se les llama "de propósito general", y
+	la verdad es que es un nombre más apropiado, si bien un poco más largo. Aunque tiene distinto nombre
+	cada uno de ellos, cuentan básicamente con la misma funcionalidad, con algunas excepciones. Determinadas 
+	operaciones -por ejemplo la multiplicación- exigen que los operandos estén en registros específicos. En 
+	ese caso no quedarán más narices que usar esos concretamente.</font></p>
+
+<font face="Arial" size="2">	</font><ol><font face="Arial" size="2"><b>AX</b> es a menudo llamado acumulador, más por motivos históricos que por otra 
+	cosa.</font></ol>
+<font face="Arial" size="2">	</font><ol><font face="Arial" size="2"><b>BX</b> se puede usar como registro base en algunos modos de direccionamiento, 
+	es decir, para apuntar a posiciones de memoria con él.</font></ol>
+<font face="Arial" size="2">	</font><ol><font face="Arial" size="2"><b>CX</b> es usado por algunas instrucciones como contador (en ciclos, 
+	rotaciones..)</font></ol>
+<font face="Arial" size="2">	</font><ol><font face="Arial" size="2"><b>DX</b> o registro de datos; a veces se usa junto con AX en esas instrucciones 
+	especiales mencionadas.</font></ol>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Cada registro de estos está dividido a su vez en dos registros de 8 bits, que pueden ser leídos
+	o escrito de manera independiente:</font></p>
+<font face="Arial" size="2">	</font><ol><font face="Arial" size="2">AX = AH | AL&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;BX = BH | BL</font></ol>
+<font face="Arial" size="2">	</font><ol><font face="Arial" size="2">CX = CH | CL&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DX = DH | DL</font></ol>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Si AX contiene 00FFh, AH=00h (su parte alta) y AL=FFh (su parte baja); si lo incrementamos en 1, 
+	AX pasa a valer 0100h (lógicamente), y con ello AH=01h, AL=00h. Si en lugar de incrementar en 1 AX lo hacemos con 
+	AL (byte inferior), AH se quedará como estaba y AL será FFh+01h=00h, es decir, AX=0000h (vamos, que cuando se 
+	manipula una parte del registro la otra no se ve afectada en absoluto) Ah, por si alguno lo dudaba, H viene de 
+	<i>high</i> y L de <i>low</i>.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Uno puede mover los datos de unos registros a otros con prácticamente total libertad.
+	También podremos realizar operaciones sobre ellos, como sumar el contenido de BX y DX para guardar
+	el resultado en DX, y cosas así. La primera restricción al respecto (y bastante razonable) es que
+	los operandos tendrán que ser del mismo tamaño (no podremos sumar BX con DH, por ejemplo).
+
+	</font></p><p align="justify"><font face="Arial" size="2">Para explicar los registros que hacen referencia a memoria hay que contar brevemente
+	qué es la segmentación.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Uno puede pensar que lo lógico y maravilloso para apuntar a una dirección de memoria
+	es colocar dicha dirección en un registro, y ale, que apunte. Eso está muy bien para 
+	registros grandes pero da la casualidad de que con 16 bits tenemos 2^16=64k posiciones. 
+	Hombre, en aquellos tiempos estaba muy bien para según qué cosas, y aquí tampoco vamos a 
+	manejar mucha más memoria, pero tampoco es plan. La solución por la que optó Intel fue 
+	usar dos registros de 16 bits (cosa que seguramente ya imaginabas), pero no dispuestos 
+	consecutivamente, como podría pensarse:</font></p>
+
+<font face="Arial" size="2">        <table align="center">
+        <tbody>
+        <tr>
+		<th><font face="Arial" size="2">Segmento:</font></th>
+          	<th><font face="Arial" size="2">Desplazamiento:</font></th>
+            	
+	    	</tr>
+        <tr>
+            	<td><font face="Arial" size="2">xxxxxxxxxxxxxxxx</font></td>
+            	<td><font face="Arial" size="2">xxxxxxxxxxxxxxxx</font></td>
+		<td><font face="Arial" size="2">&lt;- <i>Dirección de 32 bits</i></font></td>
+            	</tr>
+	</tbody></table>
+
+	</font><p align="justify"><font face="Arial" size="2">De esta manera -que, repito, no es la que se usa realmente- se podrían recorrer 2^32 
+	posiciones de memoria. Con el registro llamado de segmento apuntamos al "bloque", 
+	esto es, las líneas de mayor peso, y con el de desplazamiento nos movemos dentro de 64k. 
+	El problema reside en que si nuestra estructura de datos se encuentra al final de uno 
+	de estos bloques (un vector, por ejemplo), y queremos recorrerla linealmente, lo 
+	podremos hacer así solamente hasta llegar a la posición FFFFh del segmento apuntado, 
+	pues para seguir avanzando es necesario incrementar el registro de segmento en 1 
+	llegados a ese punto (y continuar ya normalmente incrementando el desplazamiento desde 
+	0000h). Resulta que, para más inri, una característica más que deseable -por no decir 
+	imprescindible- de un programa es que sea reubicable, es decir, que lo podamos cargar 
+	en cualquier zona de la memoria, principalmente porque el sistema operativo nos lo 
+	coloca donde puede, y cada vez en un sitio distinto. No hace falta pensar mucho para 
+	ver que, por este camino, mal vamos.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Intel dispuso los registros de la siguiente manera:</font></p>
+
+<font face="Arial" size="2">        <table>
+        <tbody>
+        <tr align="left">
+		<th><font face="Arial" size="2">Segmento:</font></th>
+          	<td><font face="Arial" size="2">xxxxxxxxxxxxxxxx0000</font></td>
+            	
+	    	</tr>
+        <tr align="right">
+		<td><font face="Arial" size="2">+</font></td>
+		</tr>
+	<tr align="left">
+            	<th><font face="Arial" size="2">Desplazamiento (u offset)</font></th>
+            	<td><font face="Arial" size="2">0000xxxxxxxxxxxxxxxx</font></td>
+            	</tr>
+        <tr>
+		<td></td>
+		<td><font face="Arial" size="2">-----------------------------------</font></td>
+		</tr>
+        <tr align="left">
+		<th><font face="Arial" size="2">Dirección de 20 bits</font></th>
+		<td><font face="Arial" size="2">xxxxxxxxxxxxxxxxxxxx</font></td>
+		</tr>
+	</tbody></table>
+
+	</font><p align="justify"><font face="Arial" size="2">Así pues para obtener la dirección real se multiplica el registro de segmento por 
+	16, y se suma al de desplazamiento (esto lógicamente no lo tenemos que hacer nosotros, 
+	hay un circuitillo por ahí para eso) Existen además parejas segmento-offset que apuntan 
+	a la misma posición de memoria (no podría ser de otro modo, si estamos recorriendo 
+	2^20 posiciones con 32 bits). De la manera propuesta ahora, cuando queremos manejar una 
+	estructura de no más de 64k (esto nos lo limitan los registros que son de 16 bits, con 
+	lo que no hay más vuelta de hoja), podremos apuntar con el registro de desplazamiento 
+	al bloque donde lo ubicaremos (alineado en un múltiplo de 16 bytes, claro) y nos 
+	moveremos por dentro de este segmento alterando el offset.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Recordemos además que todo procesador de esta familia que funcione en modo real (o
+	virtual) se comporta como un 8086 más o menos rápido en cuanto a direccionamiento de 
+	memoria, por lo que bajo MSDOS siempre estaremos limitados de esta manera.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">De la suma de segmento y offset puede suceder que, para segmentos altos, exista un
+	bit de carry a 1. Los 286 y superiores pueden aprovechar esto para acceder a la llamada
+	"memoria alta", 64k situados por encima de los 2^20=1024k iniciales. No será nuestro 
+	caso, pues nos limitaremos a manejar la memoria a la vieja usanza. De hecho únicamente 
+	poblaremos los primeros 640k (la famosa memoria convencional) pues en las posiciones 
+	de los segmentos A000h y superiores se mapea la memoria de vídeo, la expandida... Pero 
+	bueno, de momento con 640k vamos sobrados.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Ahora casi todos los registros cobran ya sentido; los registros de segmento
+	apuntan al segmento, y los de índice indican el desplazamiento dentro del segmento.
+	Los registros de índice se pueden usar como registros de datos sin problemas para
+	sumas, movimiento de datos... no así los de segmento, que tienen fuertes limitaciones.
+	Cuando se diga "un registro" como operando de una instrucción, eso incluye en principio
+	cualquier registro menos los de segmento.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">El par CS:IP indica la dirección de memoria donde está la instrucción que se ejecuta. 
+	Los nombres vienen de Code Segment e Instruction Pointer. A esta parejita sólo la 
+	modifican las instrucciones de salto, así que podemos olvidarnos -un poco- de ella.
+	Cada vez que se ejecuta una instrucción, el contador IP se incrementa para apuntar al código
+	de la operación siguiente; las instrucciones de salto cargan CS:IP con la dirección adonde
+	queremos saltar, para que se ejecute el código a partir de ahí.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">SS:SP apuntan a la pila. Como en todo micro que se precie, tenemos una pila adonde
+	echar los valores de los registros que queremos preservar para luego, las direcciones 
+	de retorno de las subrutinas.. La pila crece hacia abajo, es decir, cuando metemos 
+	algo en la pila el puntero de pila se decrementa, y cuando lo sacamos se incrementa. 
+	Siempre se meten valores de 16 bits. Significan Stack Segment y Stack Pointer, claro. 
+	Por lo general SS no se toca, y SP quizá pero poquito, ya que hay instrucciones 
+	específicas para manejar la pila que alteran SP indirectamente. Digamos que uno dice 
+	"tiro esto a la pila" o "saco lo primero que haya en la pila y lo meto aquí" y el micro 
+	modifica SP en consecuencia. BP es un puntero Base, para indicar también desplazamiento, 
+	que se usa en algunos modos de direccionamiento y especialmente cuando se manejan 
+	subrutinas. La pila se estudiará en mayor profundidad en el tema VI.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">DS y ES son registros de segmento adicionales, el primero llamado de datos (Data)
+	y el segundo Extra. Con ellos apuntaremos a los segmentos donde tengamos nuestros datos
+	(ya que del código se encarga CS), esto es, nuestras variables. Estos los manipularemos mucho más 
+	que los anteriores cuando programemos en modo real.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">DI y SI son registros índice, es decir, sirven para indicar el offset dentro
+	de un segmento. Acabarás harto de tanto usarlos. En las instrucciones de cadena
+	DI se asocia por defecto a DS, y SI a ES.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Aunque el sistema de segmentación pueda parecer muy engorroso (bueno, es que a
+	este nivel realmente lo es, y mucho) en realidad es vital. El modo protegido del 386+
+	(386+ por "386 y superiores") emplea segmentación, pero aprovechando 32 bits.
+	En entornos multitarea hay que estructurar cada programa con su(s) bloque(s) de código 
+	y de memoria, cada uno con su nivel de acceso (por ejemplo si estás guarreando con la 
+	memoria te interesa que sólo enredes con la de tu programa, para no sobreescribir 
+	otros procesos en curso por accidente, o parte del sistema operativo incluso); lo 
+	que sucede es que ahora es una mierda porque esta segmentación es muy limitada. Sirva 
+	esto para evitar la cantinela segmentación=mala que le puede haber pasado a uno por la 
+	cabeza a estas alturas de película. Tras este pequeño paréntesis, sigamos.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">El registro de flags está formado por varios bits cada uno con significado propio,
+	que son modificados por las operaciones que realizamos:</font></p>
+
+<font face="Arial" size="2">        <table border="2">
+          <tbody>
+          <tr>
+            <th><font face="Arial" size="2">Bit </font></th>
+            <td><font face="Arial" size="2">15 </font></td>
+            <td><font face="Arial" size="2">14 </font></td>
+            <td><font face="Arial" size="2">13 </font></td>
+            <td><font face="Arial" size="2">12 </font></td>
+            <td><font face="Arial" size="2">11 </font></td>
+            <td><font face="Arial" size="2">10 </font></td>
+            <td><font face="Arial" size="2">9 </font></td>
+            <td><font face="Arial" size="2">8 </font></td>
+            <td><font face="Arial" size="2">7 </font></td>
+            <td><font face="Arial" size="2">6 </font></td>
+            <td><font face="Arial" size="2">5 </font></td>
+            <td><font face="Arial" size="2">4 </font></td>
+            <td><font face="Arial" size="2">3 </font></td>
+            <td><font face="Arial" size="2">2 </font></td>
+            <td><font face="Arial" size="2">1 </font></td>
+            <td><font face="Arial" size="2">0 </font></td></tr>
+          <tr>
+            <th><font face="Arial" size="2">Flag </font></th>
+            <td><font face="Arial" size="2">-- </font></td>
+            <td><font face="Arial" size="2">-- </font></td>
+            <td><font face="Arial" size="2">-- </font></td>
+            <td><font face="Arial" size="2">-- </font></td>
+            <td><font face="Arial" size="2">OF </font></td>
+            <td><font face="Arial" size="2">DF </font></td>
+            <td><font face="Arial" size="2">IF </font></td>
+            <td><font face="Arial" size="2">TF </font></td>
+            <td><font face="Arial" size="2">SF </font></td>
+            <td><font face="Arial" size="2">ZF </font></td>
+            <td><font face="Arial" size="2">-- </font></td>
+            <td><font face="Arial" size="2">AF </font></td>
+            <td><font face="Arial" size="2">-- </font></td>
+            <td><font face="Arial" size="2">PF </font></td>
+            <td><font face="Arial" size="2">-- </font></td>
+            <td><font face="Arial" size="2">CF </font></td></tr></tbody></table>
+
+	</font><p align="justify"><font face="Arial" size="2">Aunque es un registro de 16 bits sólo algunos de ellos tienen significado. Los otros 
+	adquieren valores indeterminados, y se dice que son bits reservados; un programa no debe 
+	tocarlos, pues aunque un equipo dado puede que no los use, otros micros podrían 
+	manipularlos internamente, con resultados impredecibles.</font></p>
+
+<font face="Arial" size="2">	</font><ul>
+<font face="Arial" size="2">	<li><b>CF</b> Carry Flag o indicador de acarreo. Normalmente indica si "nos llevamos 
+		algo" despues de haber sumado o restado.</li>
+	<li><b>OF</b> Overflow Flag o indicador de desbordamiento. Si después de una operación
+		el resultado no cabe en el tamaño del registro, se pone a 1.</li>
+	<li><b>ZF</b> Zero Flag o indicador de cero. Si el resultado da 0 se pone a 1.</li>
+	<li><b>SF</b> Sign Flag o indicador de signo. Si el resultado es negativo se pone a 1.
+		</li>
+	<li><b>PF</b> Parity Flag o indicador de paridad. Con algunas operaciones lógicas o
+		aritméticas se pone a 1 si el resultado es par.</li>
+	<li><b>AF</b> Auxiliary Flag o indicador auxiliar. Se usa para operaciones BCD (si es
+		que éstas valen para algo)</li>
+	<li><b>DF</b> Direction Flag o indicador de dirección. Se usa en operaciones llamadas
+		"de cadena", indicando el sentido (ascendente o descendente) en que se recorre 
+		la memoria. (Este flag es más divertido de lo que parece.)</li>
+	<li><b>IF</b> Interrupt Flag o indicador de interrupciones. Cuando se pone a 1 se permiten
+		las interrupciones, a 0 se ignoran; se dice que se enmascaran. Hay no obstante algunas 
+		muy especiales que pasan del flag; por ejemplo, si arrancas (físicamente, me refiero;
+		coger con la mano y zás!) una tarjeta de RAM con el trasto encendido, la interrupción 
+		que salta -alerta roja, inmersión, inmersión, auuuuu- pasa de este flag olímpicamente
+		(algo así no se puede pasar por alto bajo ninguna circunstancia).</li>
+	<li><b>TF</b> Trap Flag o indicador de trampa (para ejecución paso a paso, como en los
+		depuradores; podemos olvidarnos de él)</li>
+	</font></ul>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">No conviene aturullarse demasiado a cuenta de los flags, pues a medida que se vayan
+	viendo las instrucciones que los usen se irán comentando con más calma. Resumen: es un registro
+	que contiene 1) indicadores de los resultados de algunas operaciones y 2) modificadores del	
+	comportamiento del procesador.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2"><i>- Bueno, vale, tengo un 386</i></font></p><p align="justify">
+
+<font face="Arial" size="2">	</font></p><p align="justify"><font face="Arial" size="2">Y con 386 incluyo el 486, Pentium, K5, K6.. Salvando las pijaditas añadidas,
+	funcionan todos más o menos igual (a nivel de código máquina, claro).</font></p>
+<font face="Arial" size="2">	
+	</font><p align="justify"><font face="Arial" size="2">Ahora los registros de datos son EAX,EBX,ECX,EDX funcionando de manera idéntica
+	a los anteriores, sólo que de 32 bits. Si queremos acceder a la parte baja de 
+	16 bits, nos referiremos normalmente a AX,BX.. y si queremos hacer lo propio con las dos 
+	partes que componen la parte baja de 16 bits, hablaremos de AH,AL,BH.. todo exactamente 
+	igual. Se añaden además registros de segmento adicionales (de 16 bits, como los otros),
+	FS y GS. De igual manera se extienden a 32 bits BP (a EBP), DI (a EDI) y SI (a ESI). Llamando 
+	a unos u otros modificaremos los 16 bits inferiores, o los 32 bits del registro completo. 
+	Cuando trabajemos en modo real, los segmentos de 64k nos limitarán el valor de offset a 65535; 
+	esto significa que si nos empeñamos en usar los registros extendidos en MSDOS, tendremos que
+	asegurarnos de que la parte alta (los 16 bits superiores) esté a 0.</font></p>
+
+<font face="Arial" size="2">	<table align="center" border="1" cellpadding="3">
+        <tbody>
+        <tr>
+		<th><font face="Arial" size="2">Registros de datos </font></th>
+          	<td><font face="Arial" size="2">EAX</font></td>
+            	<td><font face="Arial" size="2">EBX</font></td>
+            	<td><font face="Arial" size="2">ECX</font></td>
+            	<td><font face="Arial" size="2">EDX</font></td>
+	    	</tr>
+        <tr>
+            	<th><font face="Arial" size="2">Punteros de pila</font></th>
+            	<td><font face="Arial" size="2">ESP</font></td>
+            	<td><font face="Arial" size="2">EBP</font></td>
+		</tr>
+        <tr>
+		<th><font face="Arial" size="2">Registros índice</font></th>
+          	<td><font face="Arial" size="2">EDI</font></td>
+            	<td><font face="Arial" size="2">ESI</font></td>
+	    	</tr>
+        <tr>
+		<th><font face="Arial" size="2">Registros de segmento</font></th>
+          	<td><font face="Arial" size="2">CS</font></td>
+            	<td><font face="Arial" size="2">DS</font></td>
+            	<td><font face="Arial" size="2">ES</font></td>
+			<td><font face="Arial" size="2">FS</font></td>
+			<td><font face="Arial" size="2">GS</font></td>
+            	<td><font face="Arial" size="2">SS</font></td>
+	    	</tr>
+        <tr>
+		<th><font face="Arial" size="2">Registro de flags</font></th>
+	    	</tr>
+	</tbody></table>
+
+	</font><p align="justify"><font face="Arial" size="2">En modo protegido (windows/unix) los registros que indiquen offset podrán tomar
+	cualquier valor, siempre que el par segmento:offset apunte a la zona de nuestro programa.
+	De este modo con un mismo registro de segmento podremos, teóricamente, modificando solamente
+	el offset, recorrer 4Gb de memoria respecto a la dirección base del segmento.</font></p>
+
+<font face="Arial" size="2">	</font><p align="justify"><font face="Arial" size="2">Además, y esto es especialmente importante, la dirección efectiva de CS:EIP, por ejemplo,
+	ya no se calcula como 16*CS+EIP. Ahora el registro de segmento no indica una posición de memoria múltiplo de 16,
+	sino el índice dentro de una tabla (conocida como tabla de descriptores de segmento) donde está contenida
+	toda la información de los segmentos, como cuánto ocupan, quién tiene permiso de acceso, qué tipo de permiso...
+	La <i>dirección base</i> de ese segmento, será una dirección de, posiblemente, 32 bits, que a nosotros 
+	de momento no nos incumbe. El sistema te ubicará el segmento de código (y con segmento me refiero a ese bloque 
+	de memoria con sus permisos, etc) en una posición cualquiera de memoria y le asignará un número correspondiente
+	a un elemento de esa tabla, que guardará en CS. Cuando nos queramos referir a él usaremos el valor de CS con 
+	que nuestro programa ha arrancado. Lo mismo sucederá para los datos y la pila. Como los segmentos pueden ser
+	de hasta 4Gb, código, datos y pila irán cada uno en un segmento, de modo que nuestro programa no tendrá
+	que modificar los registros de segmento para nada. No es así en MSDOS, que siendo de 64k, es frecuente
+	tener que repartir el código y los datos entre varios segmentos.</font></p>
+<font face="Arial" size="2">	
+
+	</font><p align="right"><font face="Arial" size="2"><a href="http://www.rinconsolidario.org/eps/asm8086/asm.html">Regresar al índice</a></font></p><p align="justify">
+
+<font face="Arial" size="2">	</font>
+
+</p></body></html>
